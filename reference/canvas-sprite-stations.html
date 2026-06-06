@@ -1,0 +1,2614 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pixel Agent · Czechitas</title>
+<style>
+  :root {
+    --cream: #fdfaf5;
+    --fg: #1a1814;
+    --accent: #d4452f;
+    --muted: #8a8478;
+    --border: #e8e1d4;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--cream); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
+  body { min-height: 100vh; padding: 20px; }
+  .wrap { max-width: 1440px; margin: 0 auto; }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 36px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .panel { background: #f4ecdb; border: 1px solid var(--border); border-radius: 4px; padding: 14px; }
+  .panel h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); font-weight: 600; }
+  .scenarios button {
+    display: block; width: 100%; text-align: left; padding: 8px 10px; margin-bottom: 6px;
+    background: var(--cream); border: 1px solid var(--border); border-radius: 3px;
+    font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .scenarios button.active { background: var(--accent); color: var(--cream); border-color: var(--accent); }
+  .scenarios button:hover:not(.active) { border-color: var(--accent); }
+  .toggle-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; }
+  .toggle-row label { flex: 1; cursor: pointer; }
+  .toggle-row input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+  .stage-wrap { background: transparent; padding: 0; }
+  .stage-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+  }
+  .stage-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  @media (max-width: 980px) {
+    .stage-row { grid-template-columns: 1fr; }
+  }
+  canvas#stage { display: block; image-rendering: pixelated; image-rendering: crisp-edges;
+    width: 100%; height: auto; background: transparent; }
+  .log {
+    background: #1a1814; color: #e8d8b8; padding: 12px;
+    font-family: var(--mono); font-size: 11px; border-radius: 4px;
+    height: 140px; overflow-y: auto;
+  }
+  .log .line { padding: 2px 0; }
+  .log .line.warn { color: #f4c674; }
+  .log .line.fail { color: #f4847a; }
+  .log .line.ok { color: #92d18a; }
+  .log .line.skill { color: #b39df0; }
+  .controls { display: flex; gap: 8px; margin-top: 12px; }
+  .controls button {
+    background: var(--accent); color: var(--cream); border: none; padding: 8px 16px;
+    border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 13px;
+  }
+  .controls button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .controls button:disabled { opacity: 0.5; cursor: default; }
+  .credit { font-size: 11px; color: var(--muted); margin-top: 12px; text-align: center; }
+  .credit a { color: var(--muted); }
+
+  /* ── Full dashboard (the "this is what you'll build" payoff) ── */
+  .full-dashboard {
+    margin-top: 14px;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 22px 24px 18px;
+    transition: opacity 300ms ease;
+  }
+  .full-dashboard.hidden { display: none; }
+  .full-dashboard.warn { border-color: #d8a93a; }
+  .full-dashboard.fail { border-color: #7a3030; }
+  .dash-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .dash-title { font-family: var(--serif); font-weight: 400; font-size: 24px; margin: 0; }
+  .dash-meta { display: flex; gap: 10px; align-items: baseline; }
+  .dash-source { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .dash-tag {
+    font-family: var(--mono); font-size: 11px; padding: 2px 8px;
+    background: #eaf6e6; color: #2a5a2a; border-radius: 99px; border: 1px solid #b6dab1;
+  }
+  .full-dashboard.warn .dash-tag { background: #fdf2d4; color: #7a5a10; border-color: #e8c87a; }
+  .full-dashboard.fail .dash-tag { background: #fbe6e1; color: #7a3030; border-color: #d4452f; }
+  .dash-bars { display: flex; flex-direction: column; gap: 8px; }
+  .dash-bar-row { display: grid; grid-template-columns: 110px 1fr 70px; align-items: center; gap: 12px; font-size: 13px; }
+  .dash-bar-row .country { font-weight: 600; }
+  .dash-bar-row .bar-track { background: var(--border); border-radius: 4px; height: 18px; overflow: hidden; }
+  .dash-bar-row .bar-fill {
+    height: 100%; background: var(--accent);
+    transform-origin: left center;
+    animation: dash-bar-grow 700ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  .full-dashboard.warn .bar-fill { background: #d8a93a; }
+  .full-dashboard.fail .bar-fill { background: #7a3030; }
+  .dash-bar-row .value { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+  .dash-bar-row.dup .country { color: #7a3030; font-weight: 500; }
+  .dash-bar-row.dup .bar-fill { background: repeating-linear-gradient(45deg, #d4452f, #d4452f 4px, #f4847a 4px, #f4847a 8px) !important; }
+  .dup-tag {
+    font-style: normal; font-family: var(--mono); font-size: 10px;
+    background: #fbe6e1; color: #7a3030; border: 1px solid #d4452f;
+    border-radius: 99px; padding: 1px 6px; margin-left: 6px; vertical-align: middle;
+  }
+  @keyframes dash-bar-grow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .dash-foot {
+    margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ── Skill Builder (author the SKILL.md the agent will use) ── */
+  .skill-builder {
+    background: #fdfaf5;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 22px 14px;
+    margin-bottom: 18px;
+  }
+  .skill-builder .sb-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 4px;
+  }
+  .skill-builder .sb-title {
+    font-family: var(--serif); font-weight: 400; font-size: 22px; margin: 0;
+  }
+  .skill-builder .sb-sub {
+    font-size: 12px; color: var(--muted); margin: 0;
+  }
+  .skill-builder .sb-cols {
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px;
+    margin-top: 14px;
+  }
+  .skill-builder .sb-rules { display: flex; flex-direction: column; gap: 8px; }
+  .skill-builder .sb-rule {
+    display: grid; grid-template-columns: 22px 1fr; gap: 10px;
+    align-items: start;
+    padding: 10px 12px; background: #fbf3df;
+    border: 1px solid #e8dcc0; border-radius: 4px;
+    cursor: pointer; transition: border-color 150ms ease, opacity 150ms ease;
+  }
+  .skill-builder .sb-rule:hover { border-color: var(--accent); }
+  .skill-builder .sb-rule.off { opacity: 0.45; background: #f3ede0; }
+  .skill-builder .sb-rule input[type="checkbox"] {
+    margin-top: 3px; accent-color: var(--accent); cursor: pointer;
+  }
+  .skill-builder .sb-rule .sb-rule-title {
+    font-size: 13px; font-weight: 600; color: var(--fg);
+  }
+  .skill-builder .sb-rule .sb-rule-body {
+    font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4;
+  }
+  .skill-builder .sb-rule .sb-rule-tag {
+    display: inline-block; margin-top: 4px;
+    font-family: var(--mono); font-size: 10px;
+    background: #fdfaf5; color: var(--accent);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 1px 5px; letter-spacing: 0.4px;
+  }
+  .skill-builder .sb-preview-wrap {
+    background: #1a1814; color: #e8d8b8;
+    border-radius: 4px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .skill-builder .sb-preview-head {
+    background: #2a241c; padding: 6px 12px;
+    font-family: var(--mono); font-size: 11px; color: #92d18a;
+    border-bottom: 1px solid #3a342a;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .skill-builder .sb-preview-head .file { color: #e8d8b8; }
+  .skill-builder .sb-preview {
+    margin: 0; padding: 12px 14px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    flex: 1; min-height: 220px; max-height: 360px; overflow-y: auto;
+  }
+  .skill-builder .sb-preview .key   { color: #7adfd6; }
+  .skill-builder .sb-preview .h     { color: #f4c674; font-weight: 700; }
+  .skill-builder .sb-preview .bul   { color: #d4452f; }
+  .skill-builder .sb-preview .com   { color: #8a8478; }
+  .skill-builder .sb-preview .str   { color: #92d18a; }
+  .skill-builder .sb-actions {
+    display: flex; gap: 8px; padding: 8px 12px;
+    background: #2a241c; border-top: 1px solid #3a342a;
+  }
+  .skill-builder .sb-actions button {
+    background: var(--accent); color: var(--cream); border: none;
+    padding: 6px 12px; border-radius: 3px; cursor: pointer;
+    font-family: inherit; font-size: 12px;
+  }
+  .skill-builder .sb-actions button.ghost {
+    background: transparent; color: #e8d8b8; border: 1px solid #5a5040;
+  }
+  .skill-builder .sb-actions .copied { color: #92d18a; font-size: 11px; align-self: center; opacity: 0; transition: opacity 200ms ease; }
+  .skill-builder .sb-actions .copied.show { opacity: 1; }
+  .skill-builder .sb-install {
+    margin: 0; padding: 10px 12px 12px; background: #2a241c;
+    border-top: 1px solid #3a342a; color: #b8a890; font-size: 11px;
+    line-height: 1.5;
+  }
+  .skill-builder .sb-install code {
+    font-family: var(--mono); font-size: 11px;
+    background: #1a1814; color: #f4c674; padding: 1px 5px; border-radius: 2px;
+  }
+  .skill-builder .sb-install em { font-style: normal; color: #e8d8b8; }
+  @media (max-width: 800px) {
+    .skill-builder .sb-cols { grid-template-columns: 1fr; }
+  }
+
+  /* ── DB terminal (the SQL/result console under the stage) ── */
+  .db-terminal {
+    background: #0e1822;
+    color: #e8d8b8;
+    border: 1px solid #1a2838;
+    border-radius: 6px;
+    font-family: var(--mono);
+    overflow: hidden;
+    transition: border-color 200ms ease, opacity 200ms ease;
+    display: flex; flex-direction: column;
+    min-height: 312px;
+  }
+  .db-terminal.hidden { display: none; }
+  .db-terminal.idle .db-term-head .live-dot { background: #5a5040; animation: none; }
+  .db-terminal.idle .db-term-pane.sql,
+  .db-terminal.idle .db-term-pane.result { opacity: 0.55; }
+  .db-term-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; background: #1a2838;
+    font-size: 12px; color: #7adfd6; letter-spacing: 0.4px;
+    border-bottom: 1px solid #2a3848;
+  }
+  .db-term-head .right { font-size: 10px; color: #8a8478; letter-spacing: 0.6px; text-transform: uppercase; }
+  .db-term-head .right .live-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: #d4452f; margin-right: 4px; vertical-align: middle;
+    animation: db-blink 1s steps(2) infinite;
+  }
+  @keyframes db-blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0.3; } }
+  .db-term-body {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    font-size: 13px;
+    line-height: 1.55;
+    flex: 1;
+  }
+  .db-term-pane { padding: 10px 14px; min-height: 120px; }
+  .db-term-pane.sql    { color: #7adfd6; border-bottom: 1px solid #2a3848; }
+  .db-term-pane.result { color: #e8d8b8; }
+  .db-term-pane .pane-label {
+    font-size: 10px; color: #8a8478; text-transform: uppercase;
+    letter-spacing: 0.7px; margin-bottom: 8px;
+  }
+  .db-term-pane pre {
+    margin: 0; font-family: inherit; font-size: inherit; line-height: inherit;
+    white-space: pre-wrap; word-break: break-word; min-height: 1em;
+  }
+  .db-term-pane .caret {
+    display: inline-block; width: 7px; height: 13px;
+    background: #7adfd6; vertical-align: text-bottom;
+    animation: db-blink 1s steps(2) infinite;
+    margin-left: 1px;
+  }
+  .db-term-pane .row {
+    opacity: 0; animation: db-fade-in 250ms ease-out forwards;
+  }
+  @keyframes db-fade-in { to { opacity: 1; } }
+  .db-term-pane .row.warn { color: #f4c674; }
+  .db-term-pane .row.fail { color: #f4847a; }
+  .db-term-pane .row.ok   { color: #92d18a; }
+  @media (max-width: 800px) {
+    .db-term-body { grid-template-rows: auto auto; }
+  }
+
+  /* ── Live panels under stage ── */
+  .live-panels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .live-panel { background: #fdfaf5; border: 1px solid var(--border); border-radius: 4px; padding: 14px; position: relative; transition: opacity 200ms ease; }
+  .live-panel h4 {
+    margin: 0 0 4px; font-family: var(--mono); font-size: 12px;
+    color: var(--accent); font-weight: 600;
+  }
+  .live-panel .panel-sub { margin: 0 0 10px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .live-panel.off { background: #f3ede0; }
+  .live-panel.off h4, .live-panel.off .panel-sub { opacity: 0.5; }
+  .live-panel.off .rule-row, .live-panel.off .tool-row { opacity: 0.3; text-decoration: line-through; background: transparent; }
+  .live-panel.off .rule-row .icon, .live-panel.off .tool-row .icon { background: #efe7d4; color: var(--muted); }
+  .live-panel .off-badge {
+    position: absolute; top: 10px; right: 12px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--accent); background: #fbe6e1; border: 1px solid var(--accent);
+    padding: 2px 6px; border-radius: 3px; letter-spacing: 0.5px;
+    display: none;
+  }
+  .live-panel.off .off-badge { display: inline-block; }
+
+  .rule-row, .tool-row {
+    display: flex; align-items: flex-start; gap: 8px; padding: 8px 6px;
+    border-top: 1px solid #efe7d4; font-size: 13px; line-height: 1.35;
+    transition: background 200ms ease, opacity 200ms ease;
+  }
+  .rule-row:first-of-type, .tool-row:first-of-type { border-top: 0; }
+  .rule-row .icon, .tool-row .icon {
+    flex-shrink: 0; width: 18px; height: 18px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    background: #efe7d4; color: var(--muted);
+  }
+  .rule-row .label, .tool-row .label { flex: 1; }
+  .rule-row .label small, .tool-row .label small {
+    display: block; color: var(--muted); font-size: 11px; font-family: var(--mono); margin-top: 2px;
+  }
+  .rule-row.fired-pass, .tool-row.fired-pass { background: #eaf6e6; }
+  .rule-row.fired-pass .icon, .tool-row.fired-pass .icon { background: #3a7a3a; color: #fff; }
+  .rule-row.fired-fail { background: #fbe6e1; }
+  .rule-row.fired-fail .icon { background: var(--accent); color: #fff; }
+  .rule-row.skipped { opacity: 0.45; }
+  .rule-row.skipped .icon { background: transparent; border: 1px dashed var(--border); }
+  .rule-row.disabled { opacity: 0.35; text-decoration: line-through; }
+  .tool-row.active { background: #fbe6e1; }
+  .tool-row.active .icon { background: var(--accent); color: #fff; }
+  .tool-row.disabled { opacity: 0.35; }
+
+  .panel-footer {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #efe7d4;
+    font-size: 11px; color: var(--muted);
+  }
+  .panel-footer a { color: var(--accent); text-decoration: none; }
+  .panel-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .live-panels { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pixel Agent</h1>
+  <div class="sub">jak vypadá smyčka agent → skill → MCP → DB → dashboard, když ji vidíte</div>
+
+  <div class="layout">
+    <div class="rail">
+      <div class="panel scenarios">
+        <h3>Scénář</h3>
+        <button data-scenario="A" class="active">Top 10 zemí (čistá)</button>
+        <button data-scenario="B">DROP TEROR2_OLD (composite)</button>
+        <button data-scenario="C">JOIN COUNTRY_DIRTYDATA</button>
+      </div>
+      <div class="panel">
+        <h3>Layers</h3>
+        <div class="toggle-row">
+          <input type="checkbox" id="t-skill" checked>
+          <label for="t-skill">Skill loaded</label>
+        </div>
+        <div class="toggle-row">
+          <input type="checkbox" id="t-mcp" checked>
+          <label for="t-mcp">MCP server</label>
+        </div>
+        <div class="toggle-row">
+          <input type="checkbox" id="t-evals" checked>
+          <label for="t-evals">Evals</label>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="skill-builder">
+        <div class="sb-head">
+          <div>
+            <h3 class="sb-title">Postav si SKILL.md</h3>
+            <p class="sb-sub">Tahle pravidla agent načte před každým dotazem. Zaškrtni co má hlídat — soubor vlevo dole se mění živě.</p>
+          </div>
+        </div>
+        <div class="sb-cols">
+          <div class="sb-rules" id="sb-rules"></div>
+          <div class="sb-preview-wrap">
+            <div class="sb-preview-head">
+              <span class="file">SKILL.md</span>
+              <span id="sb-preview-count">5 pravidel aktivních</span>
+            </div>
+            <pre id="sb-preview" class="sb-preview"></pre>
+            <div class="sb-actions">
+              <button id="sb-download">Stáhnout skill (.zip)</button>
+              <button id="sb-copy" class="ghost">Kopírovat</button>
+              <span id="sb-copied" class="copied">zkopírováno ✓</span>
+            </div>
+            <p class="sb-install">
+              Rozbal do <code>~/.claude/skills/</code> — Copilot v VS Code a Claude Code obě tu složku čtou.
+              Pak se v Copilot Chatu zeptej: <em>„Vyrob mi top 10 zemí podle počtu útoků jako graf."</em>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-col">
+          <div class="stage-wrap">
+            <canvas id="stage" width="480" height="280"></canvas>
+          </div>
+          <div class="controls">
+            <button id="btn-run">Run scenario</button>
+            <button id="btn-reset" class="ghost">Reset</button>
+          </div>
+          <div id="log" class="log"><div class="line">[idle] click "Run scenario" to start</div></div>
+        </div>
+
+        <div id="db-terminal" class="db-terminal idle">
+          <div class="db-term-head">
+            <span><span id="db-term-tool">mcp-snowflake · čeká</span></span>
+            <span class="right"><span class="live-dot"></span><span id="db-term-state">idle</span></span>
+          </div>
+          <div class="db-term-body">
+            <div class="db-term-pane sql">
+              <div class="pane-label">SQL</div>
+              <pre id="db-term-sql"></pre>
+            </div>
+            <div class="db-term-pane result">
+              <div class="pane-label">Result</div>
+              <pre id="db-term-result"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="full-dashboard" class="full-dashboard hidden">
+        <div class="dash-head">
+          <h3 id="dash-title" class="dash-title">Top 10 zemí podle počtu útoků</h3>
+          <div class="dash-meta">
+            <span id="dash-source" class="dash-source">TEROR · 84 341 řádků · 153 zemí</span>
+            <span id="dash-tag" class="dash-tag">čistý výsledek</span>
+          </div>
+        </div>
+        <div id="dash-bars" class="dash-bars"></div>
+        <div class="dash-foot">
+          tohle by ti mohl agent vygenerovat z jednoho promptu —
+          <em>pokud má SKILL.md, MCP a evals nastavené</em>.
+        </div>
+      </div>
+
+      <div class="live-panels">
+        <div class="live-panel" id="skill-panel">
+          <span class="off-badge">SKILL OFF</span>
+          <h4>SKILL.md</h4>
+          <p class="panel-sub">sql-review.md · 5 pravidel</p>
+          <div id="skill-rows"></div>
+          <div class="panel-footer">
+            Tato pravidla jste si napsali sami v
+            <a href="https://ishalkin.github.io/czechitas-skill-builder/" target="_blank">Skill Builder</a>.
+          </div>
+        </div>
+        <div class="live-panel" id="mcp-panel">
+          <span class="off-badge">MCP OFF</span>
+          <h4>MCP server</h4>
+          <p class="panel-sub">snowflake-czechitas · 3 nástroje</p>
+          <div id="mcp-rows"></div>
+          <div class="panel-footer">
+            Agent vybírá nástroj podle úkolu — ne náhodou.
+          </div>
+        </div>
+        <div class="live-panel" id="evals-panel">
+          <span class="off-badge">EVALS OFF</span>
+          <h4>evals.json</h4>
+          <p class="panel-sub">post-query · 3 kontroly</p>
+          <div id="evals-rows"></div>
+          <div class="panel-footer">
+            Skill chytá <em>před</em> spuštěním. Evals kontrolují <em>po</em> — jestli výsledek dává smysl.
+          </div>
+        </div>
+      </div>
+
+      <div class="credit">
+        Sprites: <a href="https://arlantr.itch.io/metrocity">MetroCity by BK.A4</a> · Office layout:
+        <a href="https://github.com/thx0701/openclaw-virtual-office">openclaw-virtual-office (MIT)</a>
+        · Sibling tools:
+        <a href="https://ishalkin.github.io/czechitas-stack-trace/">Stack Trace</a> ·
+        <a href="https://ishalkin.github.io/czechitas-skill-builder/">Skill Builder</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════
+ * ASSET LOADING
+ * ═══════════════════════════════════════════════════════════════════ */
+
+const ASSETS = {
+  bg: "assets/office/generated-office.png",
+  juliaIdle: "assets/julia/Julia-Idle.png",
+  juliaForward: "assets/julia/Julia_walk_Foward.png",
+  juliaLeft: "assets/julia/Julia_walk_Left.png",
+  juliaRight: "assets/julia/Julia_walk_Rigth.png",
+  juliaUp: "assets/julia/Julia_walk_Up.png",
+  juliaPC: "assets/julia/Julia_PC.png",
+  chestClosed: "assets/office/chest-closed.png",
+  chestOpen: "assets/office/chest-open.png",
+};
+
+const images = {};
+function loadAll() {
+  return Promise.all(Object.entries(ASSETS).map(([k, src]) => new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { images[k] = img; res(); };
+    img.onerror = () => { console.warn("failed:", src); res(); }; // continue even on missing assets
+    img.src = src;
+  })));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * STATIONS (5 fixed positions on the office floor)
+ * canvas is 480×280; place stations along sensible spots
+ * ═══════════════════════════════════════════════════════════════════ */
+
+// Stations sit in the open walking lane between the conference desk and
+// the bottom shelves (y ~ 215). Furniture extends UP from the agent's
+// feet, so the bottom-of-bg bookshelves stay visible behind them and
+// nothing "sits on top of" the shelves.
+const STATIONS = {
+  inbox:  { x:  64, y: 218, label: "INBOX"      },
+  skill:  { x: 150, y: 218, label: "SKILL.md"   },
+  mcp:    { x: 240, y: 218, label: "MCP toolbox"},
+  db:     { x: 330, y: 218, label: "DB"         },
+  board:  { x: 416, y: 218, label: "DASHBOARD"  },
+  start:  { x:  64, y: 218, label: ""           },
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+ * SPRITE CONFIG (Julia frames are 32×40 each, 4 frames per row)
+ * ═══════════════════════════════════════════════════════════════════ */
+
+const SPRITE_W = 32;
+const SPRITE_H = 40;
+const FRAMES = 4;
+
+/* ═══════════════════════════════════════════════════════════════════
+ * STATE
+ * ═══════════════════════════════════════════════════════════════════ */
+
+const state = {
+  scenario: "A",
+  rules: {
+    noDestructive: true,
+    noOldTables: true,
+    preferCleanLookup: true,
+    bigScan: true,
+    renderChart: true,
+  },
+  skillOn: true,
+  mcpOn: true,
+  evalsOn: true,
+
+  agent: {
+    x: STATIONS.start.x,
+    y: STATIONS.start.y,
+    facing: "down",   // up | down | left | right
+    moving: false,
+    frame: 0,
+    frameTime: 0,
+    activity: "idle", // idle | walking | reading | tooling | drawing
+  },
+
+  steps: [],         // array of {fn, label} to play
+  stepIdx: 0,
+  stepCursor: null,  // current async target / handler
+  running: false,
+
+  bubble: null,      // { text, x, y, ttl }
+  log: [],           // ['ok|warn|fail|skill|info', text]
+
+  // MCP panel state — which tool is currently being highlighted
+  mcpOpen: false,            // chest sprite open/closed
+  mcpTool: null,             // null | "list_tables" | "describe_table" | "execute_query" | "blocked"
+
+  // MCP panel state — which tools have been used this run (persist after closeMcp)
+  // map: tool key → "used" | undefined
+  toolStatus: {},
+
+  // Skill panel state — which rules have fired this run
+  // map: rule key → "pass" | "fail" | "skip" | null (untouched / pending)
+  ruleStatus: {},
+
+  // Evals panel state — which evals fired this run
+  // map: eval key → "pass" | "fail" | "skip" | null (untouched / pending)
+  evalStatus: {},
+
+  // Whiteboard chart state — bars 0..5 drawn one by one
+  chartBars: 0,      // 0..5
+  chartTone: "ok",   // "ok" | "warn" | "fail"
+  chartShown: false,
+
+  // Recipe card on canvas at SKILL station. null = hidden.
+  // { lines: [{text, status: "pending"|"pass"|"fail"|"skip"}] }
+  recipeCard: null,
+
+  // Toolbox callout at MCP station. null = hidden.
+  // { open: bool, picked: "list_tables"|"describe_table"|"execute_query"|null }
+  toolbox: null,
+
+  // PC monitor content at DB station. null = hidden.
+  // { sql: string, rows: string[] }
+  dbScreen: null,
+
+  // Teacher / evaluator. Walks in from the right edge to the dashboard
+  // when evalsOn fires — holds expected.json on a clipboard, compares
+  // row-by-row, stamps the dashboard ✓ or ✗.
+  teacher: null, // { x, y, walking, frame, frameTime, holdingCard, verdict }
+  reportCard: null, // { lines: [{label, actual, expected, status}], tone }
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+ * RULE METADATA (used by skill panel)
+ * ═══════════════════════════════════════════════════════════════════ */
+
+// Czech labels match the Skill Builder app 1:1 — participants recognise their own words.
+// `body` is the markdown bullet that lands in the generated SKILL.md.
+const RULES = [
+  {
+    key: "noDestructive",
+    label: "Odmítej DROP / DELETE / INSERT / UPDATE",
+    short: "no destructive",
+    tag: "NO_DESTRUCTIVE",
+    pattern: "/(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|MERGE)/",
+    body: "Refuse all destructive operations (DROP, DELETE, INSERT, UPDATE, TRUNCATE, ALTER, MERGE).",
+  },
+  {
+    key: "noOldTables",
+    label: "Nepoužívej tabulky _OLD / _LEGACY / _BACKUP",
+    short: "no _OLD tables",
+    tag: "NO_OLD_TABLES",
+    pattern: "/_(OLD|LEGACY|BACKUP)/",
+    body: "Avoid deprecated tables ending in _OLD, _LEGACY, or _BACKUP. Suggest the current alternative.",
+  },
+  {
+    key: "preferCleanLookup",
+    label: "Preferuj COUNTRY před COUNTRY_DIRTYDATA",
+    short: "prefer COUNTRY",
+    tag: "PREFER_CLEAN_LOOKUP",
+    pattern: "swap COUNTRY_DIRTYDATA → COUNTRY",
+    body: "When joining country data, prefer the clean COUNTRY table over COUNTRY_DIRTYDATA (which contains duplicates).",
+  },
+  {
+    key: "bigScan",
+    label: "Varuj při skenech přes 1M řádků bez WHERE",
+    short: "big scan",
+    tag: "BIG_SCAN",
+    pattern: "rows × no WHERE",
+    body: "Warn when a query scans a table over 1M rows without a WHERE filter on a date or partition column.",
+  },
+  {
+    key: "renderChart",
+    label: "Výsledek vykresli jako graf, ne jen tabulku",
+    short: "render chart",
+    tag: "RENDER_CHART",
+    pattern: "result rows → dashboard",
+    body: "When the result is tabular (top-N or time series), render it on the dashboard as a bar chart — never dump raw rows into chat.",
+  },
+];
+
+const TOOLS = [
+  { key: "list_tables",    label: "list_tables",    sub: "vypíše dostupné tabulky" },
+  { key: "describe_table", label: "describe_table", sub: "ukáže sloupce a typy" },
+  { key: "execute_query",  label: "execute_query",  sub: "spustí SQL na DB" },
+];
+
+// Evals run AFTER the query — they catch silent failures the skill rules missed.
+const EVALS = [
+  { key: "rowCount",     label: "Počet řádků = očekávaný",      short: "row count",     tag: "expected vs actual" },
+  { key: "schemaMatch",  label: "Schema = země + počet",        short: "schema match",  tag: "COUNTRY_TXT + n" },
+  { key: "noSilentFail", label: "Query nesmí tiše dropnout DB", short: "no silent drop", tag: "DROP / DELETE prošlo?" },
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+ * RENDERING
+ * ═══════════════════════════════════════════════════════════════════ */
+
+const cnv = document.getElementById("stage");
+// Logical (game) coordinates stay 480×280. Boost the backing store to 2× so
+// rasterized text and pixel-art labels get twice the resolution while CSS
+// still renders the canvas at its 480×280-derived display size. Sprites
+// drawn with imageSmoothingEnabled=false still look like crisp pixel art
+// (each source pixel becomes a 2×2 block instead of a stretched blur).
+const STAGE_DPR = 2;
+const STAGE_W = cnv.width;
+const STAGE_H = cnv.height;
+cnv.width  = STAGE_W * STAGE_DPR;
+cnv.height = STAGE_H * STAGE_DPR;
+const ctx = cnv.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+ctx.scale(STAGE_DPR, STAGE_DPR);
+// Shadow `cnv.width` / `cnv.height` getters at the logical level so the
+// rest of the code (which reads cnv.width to position things at the right
+// edge) keeps working in 480×280 space.
+Object.defineProperty(cnv, "logicalW", { value: STAGE_W });
+Object.defineProperty(cnv, "logicalH", { value: STAGE_H });
+
+function draw() {
+  ctx.clearRect(0, 0, STAGE_W, STAGE_H);
+
+  // background office
+  if (images.bg) {
+    ctx.drawImage(images.bg, 0, 0, STAGE_W, STAGE_H);
+  } else {
+    ctx.fillStyle = "#3a2f25";
+    ctx.fillRect(0, 0, STAGE_W, STAGE_H);
+  }
+
+  // furniture sits on the floor at every station; draw before labels so
+  // pills land on top
+  drawInboxTray();
+  drawBookshelf();
+  drawMcpChest();
+  drawDbMonitor();
+  drawWhiteboard();
+
+  // floor labels (one per station, pill below the station y baseline)
+  ctx.font = "bold 9px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  for (const [k, s] of Object.entries(STATIONS)) {
+    if (k === "start") continue;
+    const w = Math.ceil(ctx.measureText(s.label).width) + 8;
+    const py = s.y + 14;
+    ctx.fillStyle = "rgba(253, 250, 245, 0.95)";
+    ctx.fillRect(s.x - w / 2, py, w, 12);
+    ctx.strokeStyle = "rgba(212, 69, 47, 0.8)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(s.x - w / 2 + 0.5, py + 0.5, w - 1, 11);
+    ctx.fillStyle = "#1a1814";
+    ctx.fillText(s.label, s.x, py + 9);
+  }
+  ctx.textAlign = "start";
+
+  // ── Thinking visualizations (above stations) ──
+  drawRecipeCard();
+  drawToolbox();
+  // (DB monitor on canvas is decorative only — actual SQL/results stream
+  //  in the HTML db-terminal panel below the stage where they're readable.)
+
+  // agent sprite
+  drawAgent();
+  drawTeacher();
+  drawReportCard();
+
+  // speech bubble (drawn last so it overlays everything)
+  if (state.bubble) drawBubble(state.bubble);
+}
+
+// Each station gets a chunky 30×40-ish piece of furniture sitting on the
+// clean checkered floor to the LEFT of the agent. Big enough to read at
+// canvas scale even with the busy office bg.
+
+// INBOX = wooden table with stacked papers + an arriving envelope.
+function drawInboxTray() {
+  const s = STATIONS.inbox;
+  const tw = 28, tableTop = 4, legH = 14;
+  const bx = Math.round(s.x - tw - 6);
+  const tabY = Math.round(s.y - 18);
+
+  // table top
+  ctx.fillStyle = "#7a5430"; ctx.fillRect(bx, tabY, tw, tableTop);
+  ctx.fillStyle = "#5a3e22"; ctx.fillRect(bx, tabY + tableTop, tw, 1);
+  // legs
+  ctx.fillStyle = "#5a3e22";
+  ctx.fillRect(bx + 1, tabY + tableTop, 2, legH);
+  ctx.fillRect(bx + tw - 3, tabY + tableTop, 2, legH);
+
+  // paper stack on table
+  const stackY = tabY - 7;
+  ctx.fillStyle = "#fdfaf5"; ctx.fillRect(bx + 4, stackY, tw - 8, 7);
+  ctx.strokeStyle = "#bba"; ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 4.5, stackY + 0.5, tw - 9, 6);
+  ctx.fillStyle = "#bba";
+  ctx.fillRect(bx + 6, stackY + 2, tw - 12, 1);
+  ctx.fillRect(bx + 6, stackY + 4, tw - 12, 1);
+
+  // floating envelope above (like a fresh prompt arriving)
+  const ex = bx + tw / 2 - 6, ey = tabY - 18;
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fillRect(ex + 1, ey + 1, 12, 8);
+  ctx.fillStyle = "#fdfaf5"; ctx.fillRect(ex, ey, 12, 8);
+  ctx.strokeStyle = "#1a1814"; ctx.strokeRect(ex + 0.5, ey + 0.5, 11, 7);
+  ctx.beginPath();
+  ctx.moveTo(ex + 0.5, ey + 0.5);
+  ctx.lineTo(ex + 6, ey + 4.5);
+  ctx.lineTo(ex + 11.5, ey + 0.5);
+  ctx.stroke();
+  // red wax seal
+  ctx.fillStyle = "#d4452f";
+  ctx.fillRect(ex + 4, ey + 5, 4, 2);
+}
+
+// SKILL = tall wooden lectern with a big open recipe book on top.
+// 30 px wide, 40 px tall. Clearly a reading stand with an instruction.
+function drawBookshelf() {
+  const s = STATIONS.skill;
+  const fw = 30;
+  const bx = Math.round(s.x - fw - 6);
+  const baseY = Math.round(s.y - 4);  // floor where base sits
+
+  // base (splayed feet)
+  ctx.fillStyle = "#3a2818"; ctx.fillRect(bx + 2, baseY, fw - 4, 3);
+  ctx.fillStyle = "#5a3e22"; ctx.fillRect(bx + 6, baseY - 3, fw - 12, 3);
+
+  // post
+  ctx.fillStyle = "#6b4a2a"; ctx.fillRect(bx + fw / 2 - 2, baseY - 18, 4, 18);
+
+  // angled top tray
+  const trayY = baseY - 28, trayW = fw, trayH = 4;
+  ctx.fillStyle = "#7a5430"; ctx.fillRect(bx, trayY, trayW, trayH);
+  ctx.fillStyle = "#5a3e22"; ctx.fillRect(bx, trayY + trayH, trayW, 2);
+  ctx.fillStyle = "#3a2818"; ctx.fillRect(bx, trayY - 1, trayW, 1);
+
+  // big open book on tray
+  const bookY = trayY - 10, bookH = 10;
+  ctx.fillStyle = "#fdfaf5"; ctx.fillRect(bx + 1, bookY, trayW - 2, bookH);
+  ctx.strokeStyle = "#1a1814"; ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 1.5, bookY + 0.5, trayW - 3, bookH - 1);
+  // spine
+  ctx.fillStyle = "#1a1814"; ctx.fillRect(bx + fw / 2 - 0.5, bookY, 1, bookH);
+  // header bands (red, like SKILL.md heading)
+  ctx.fillStyle = "#d4452f";
+  ctx.fillRect(bx + 3, bookY + 2, (fw / 2) - 4, 1);
+  ctx.fillRect(bx + fw / 2 + 2, bookY + 2, (fw / 2) - 4, 1);
+  // ruled lines
+  ctx.fillStyle = "#8a8478";
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(bx + 3, bookY + 4 + i * 2, (fw / 2) - 4, 1);
+    ctx.fillRect(bx + fw / 2 + 2, bookY + 4 + i * 2, (fw / 2) - 4, 1);
+  }
+}
+
+function drawMcpChest() {
+  const s = STATIONS.mcp;
+  const sheet = state.mcpOpen ? images.chestOpen : images.chestClosed;
+  const w = 30, h = 30;
+  const bx = Math.round(s.x - w - 6);
+  const by = Math.round(s.y - h + 6);
+  if (sheet) {
+    ctx.drawImage(sheet, 0, 0, sheet.width, sheet.height, bx, by, w, h);
+  } else {
+    ctx.fillStyle = "#6b4a2a"; ctx.fillRect(bx, by, w, h);
+  }
+}
+
+// DB = chunky standalone CRT monitor on the floor (no desk underneath).
+// Bezel + screen + neck + wide base. ~30 wide, ~36 tall total.
+function drawDbMonitor() {
+  const s = STATIONS.db;
+  const mw = 30, mh = 24;
+  const bx = Math.round(s.x - mw - 6);
+  const by = Math.round(s.y - mh - 6);
+
+  // wide base on the floor
+  const baseW = 22, baseH = 4;
+  ctx.fillStyle = "#3a2818";
+  ctx.fillRect(bx + mw / 2 - baseW / 2, by + mh + 5, baseW, baseH);
+  ctx.fillStyle = "#5a3e22";
+  ctx.fillRect(bx + mw / 2 - baseW / 2 + 1, by + mh + 5 + 1, baseW - 2, baseH - 2);
+  // neck
+  ctx.fillStyle = "#3a2818"; ctx.fillRect(bx + mw / 2 - 3, by + mh, 6, 5);
+
+  // monitor casing (cream/beige CRT vibe)
+  ctx.fillStyle = "#cbb89a"; ctx.fillRect(bx, by, mw, mh);
+  ctx.fillStyle = "#a89878"; ctx.fillRect(bx, by + mh - 2, mw, 2);
+  ctx.fillStyle = "#e8d8b8"; ctx.fillRect(bx, by, mw, 1);
+
+  // screen recess
+  ctx.fillStyle = "#1a1814"; ctx.fillRect(bx + 2, by + 2, mw - 4, mh - 6);
+  // screen — bright cyan when terminal is live, otherwise dim
+  const term = document.getElementById("db-terminal");
+  const live = !!term && !term.classList.contains("hidden") && !term.classList.contains("idle");
+  ctx.fillStyle = live ? "#0e2838" : "#0e1822";
+  ctx.fillRect(bx + 3, by + 3, mw - 6, mh - 8);
+  // a few scanlines + blinking cursor when live to suggest activity
+  if (live) {
+    ctx.fillStyle = "rgba(122, 223, 214, 0.35)";
+    for (let i = 0; i < 3; i++) ctx.fillRect(bx + 4, by + 5 + i * 3, mw - 8, 1);
+    // blinking caret
+    if (Math.floor(performance.now() / 400) % 2 === 0) {
+      ctx.fillStyle = "#7adfd6";
+      ctx.fillRect(bx + 4, by + mh - 11, 3, 2);
+    }
+  }
+
+  // power LED
+  ctx.fillStyle = live ? "#92d18a" : "#d4452f";
+  ctx.fillRect(bx + mw - 4, by + mh - 4, 2, 2);
+}
+
+// DASHBOARD = free-standing whiteboard on a tripod, planted on the floor
+// to the LEFT of the agent (same orientation as the other stations).
+function drawWhiteboard() {
+  const s = STATIONS.board;
+  const w = 58, h = 40;
+  const bx = Math.round(s.x - w - 6);
+  const by = Math.round(s.y - h - 6);
+
+  // tripod legs (drawn first, behind board)
+  ctx.strokeStyle = "#3a2818";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx + 8, by + h);          ctx.lineTo(bx + 4, by + h + 8);
+  ctx.moveTo(bx + w - 8, by + h);      ctx.lineTo(bx + w - 4, by + h + 8);
+  ctx.moveTo(bx + w / 2, by + h);      ctx.lineTo(bx + w / 2, by + h + 8);
+  ctx.stroke();
+
+  // tray
+  ctx.fillStyle = "#5a4a30";
+  ctx.fillRect(bx - 2, by + h - 2, w + 4, 3);
+  // board (white) with thin frame
+  ctx.fillStyle = "#fdfaf5";
+  ctx.fillRect(bx, by, w, h);
+  ctx.strokeStyle = "#1a1814";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+
+  // title
+  ctx.fillStyle = "#1a1814";
+  ctx.font = "bold 8px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("DASHBOARD", bx + w / 2, by + 9);
+
+  // baseline
+  const baseY = by + h - 5;
+  ctx.fillStyle = "#1a1814";
+  ctx.fillRect(bx + 4, baseY, w - 8, 1);
+
+  // bars (5 bars total, decreasing height left→right)
+  const colors = { ok: "#d4452f", warn: "#d8a93a", fail: "#7a3030" };
+  const bar = colors[state.chartTone] || colors.ok;
+  const slot = Math.floor((w - 10) / 5);
+  for (let i = 0; i < state.chartBars; i++) {
+    const bw = slot - 2;
+    const bh = 4 + (4 - i) * 4;
+    const bx2 = bx + 5 + i * slot;
+    const by2 = baseY - bh;
+    ctx.fillStyle = bar;
+    ctx.fillRect(bx2, by2, bw, bh);
+  }
+  ctx.textAlign = "start";
+}
+
+/* The teacher (evals.json). Procedural sprite, no spritesheet — drawn
+ * directly so we can avoid shipping another asset. She wears a navy
+ * blazer and carries a clipboard with the "expected" answer. Walks in
+ * from off-screen right when evalsOn fires after the agent ships data. */
+function drawTeacher() {
+  const t = state.teacher;
+  if (!t) return;
+  const x = Math.round(t.x), y = Math.round(t.y);
+  const w = 18, h = 34;
+  const bx = x - Math.floor(w / 2);
+  const by = y - h;
+  const bob = t.walking ? (Math.floor(t.frame) % 2) : 0;
+  // When evals are turned off, fade the teacher so she's visibly inactive.
+  const prevAlpha = ctx.globalAlpha;
+  if (!state.evalsOn) ctx.globalAlpha = 0.32;
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(bx + 2, by + h, w - 4, 2);
+
+  // legs (navy slacks)
+  ctx.fillStyle = "#1a2840";
+  if (t.walking && bob === 0) {
+    ctx.fillRect(bx + 4, by + 24, 4, 9);
+    ctx.fillRect(bx + 10, by + 24, 4, 7);
+  } else if (t.walking) {
+    ctx.fillRect(bx + 4, by + 24, 4, 7);
+    ctx.fillRect(bx + 10, by + 24, 4, 9);
+  } else {
+    ctx.fillRect(bx + 4, by + 24, 4, 9);
+    ctx.fillRect(bx + 10, by + 24, 4, 9);
+  }
+  // shoes
+  ctx.fillStyle = "#1a1814";
+  ctx.fillRect(bx + 3, by + h - 2, 5, 2);
+  ctx.fillRect(bx + 10, by + h - 2, 5, 2);
+
+  // blazer body — navy
+  ctx.fillStyle = "#2a3858";
+  ctx.fillRect(bx + 2, by + 14, w - 4, 11);
+  // lapel V (lighter)
+  ctx.fillStyle = "#3a4868";
+  ctx.fillRect(bx + 7, by + 14, 4, 6);
+  // blazer red accent stripe
+  ctx.fillStyle = "#d4452f";
+  ctx.fillRect(bx + 8, by + 16, 2, 8);
+
+  // arms — same blazer color
+  ctx.fillStyle = "#2a3858";
+  ctx.fillRect(bx,        by + 15, 3, 8);
+  ctx.fillRect(bx + w - 3, by + 15, 3, 8);
+  // skin at wrist
+  ctx.fillStyle = "#e8b894";
+  ctx.fillRect(bx,        by + 22, 3, 2);
+  ctx.fillRect(bx + w - 3, by + 22, 3, 2);
+
+  // clipboard held in front (both arms wrap around)
+  if (t.holdingCard) {
+    const cbW = 11, cbH = 14;
+    const cbX = bx + Math.floor(w / 2) - Math.floor(cbW / 2);
+    const cbY = by + 17;
+    // shadow
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(cbX + 1, cbY + 1, cbW, cbH);
+    // paper
+    ctx.fillStyle = "#fdfaf5"; ctx.fillRect(cbX, cbY, cbW, cbH);
+    ctx.strokeStyle = "#1a1814"; ctx.lineWidth = 1;
+    ctx.strokeRect(cbX + 0.5, cbY + 0.5, cbW - 1, cbH - 1);
+    // brown clip at top
+    ctx.fillStyle = "#7a5430"; ctx.fillRect(cbX + 3, cbY - 2, cbW - 6, 3);
+    // ruled lines (the "expected" answers)
+    ctx.fillStyle = "#bba";
+    ctx.fillRect(cbX + 2, cbY + 3, cbW - 4, 1);
+    ctx.fillRect(cbX + 2, cbY + 6, cbW - 4, 1);
+    ctx.fillRect(cbX + 2, cbY + 9, cbW - 4, 1);
+    ctx.fillRect(cbX + 2, cbY + 12, cbW - 4, 1);
+  }
+
+  // neck
+  ctx.fillStyle = "#e8b894";
+  ctx.fillRect(bx + 7, by + 11, 4, 3);
+
+  // head — skin tone
+  ctx.fillStyle = "#e8b894";
+  ctx.fillRect(bx + 4, by + 2, 10, 10);
+  // hair (brown bob, distinct from Julia's blonde)
+  ctx.fillStyle = "#5a3818";
+  ctx.fillRect(bx + 4, by, 10, 5);
+  ctx.fillRect(bx + 3, by + 2, 1, 6);
+  ctx.fillRect(bx + 14, by + 2, 1, 6);
+  // glasses (round black frames + nose bridge)
+  ctx.fillStyle = "#1a1814";
+  ctx.fillRect(bx + 5, by + 6, 3, 2);
+  ctx.fillRect(bx + 10, by + 6, 3, 2);
+  ctx.fillRect(bx + 8, by + 7, 2, 1);
+  // eyes inside the lenses
+  ctx.fillStyle = "#fdfaf5";
+  ctx.fillRect(bx + 6, by + 7, 1, 1);
+  ctx.fillRect(bx + 11, by + 7, 1, 1);
+  // mouth shifts with verdict
+  ctx.fillStyle = "#7a3030";
+  if (t.verdict === "pass") {
+    ctx.fillRect(bx + 6, by + 10, 6, 1);
+    ctx.fillRect(bx + 5, by + 9, 1, 1);
+    ctx.fillRect(bx + 12, by + 9, 1, 1);
+  } else if (t.verdict === "fail") {
+    ctx.fillRect(bx + 6, by + 10, 6, 1);
+    ctx.fillRect(bx + 5, by + 11, 1, 1);
+    ctx.fillRect(bx + 12, by + 11, 1, 1);
+  } else {
+    ctx.fillRect(bx + 7, by + 10, 4, 1);
+  }
+
+  // verdict letter above head when she finishes grading
+  if (t.verdict) {
+    const vx = bx + Math.floor(w / 2);
+    const vy = by - 5;
+    ctx.font = "bold 16px ui-monospace, monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = t.verdict === "pass" ? "#3a7a3a"
+                  : t.verdict === "warn" ? "#d8a93a"
+                  : "#d4452f";
+    ctx.fillText(t.verdict === "pass" ? "✓" : t.verdict === "warn" ? "≈" : "✗", vx, vy);
+    ctx.textAlign = "start";
+  }
+
+  // floor pill label "TEACHER"
+  ctx.font = "bold 9px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  const lab = "evals.json";
+  const lw = Math.ceil(ctx.measureText(lab).width) + 8;
+  const ly = y + 16;
+  ctx.fillStyle = "#fdfaf5";
+  ctx.fillRect(x - lw / 2, ly - 8, lw, 12);
+  ctx.strokeStyle = "#2a3858";
+  ctx.strokeRect(x - lw / 2 + 0.5, ly - 7.5, lw - 1, 11);
+  ctx.fillStyle = "#2a3858";
+  ctx.fillText(lab, x, ly);
+  ctx.textAlign = "start";
+
+  ctx.globalAlpha = prevAlpha;
+}
+
+// Report card: floats above the whiteboard while the teacher grades.
+// Two columns — actual (left, agent's number) vs expected (right, the
+// truth from the test fixture) — with row-level pass/fail markers.
+function drawReportCard() {
+  if (!state.reportCard) return;
+  const card = state.reportCard;
+  const s = STATIONS.board;
+  const w = 184, lh = 13, headH = 19, padTop = 4, padBot = 6;
+  const h = headH + padTop + card.lines.length * lh + padBot;
+  // anchor so the right edge of the card sits 6px from the canvas edge,
+  // and the card floats above the dashboard (whiteboard top sits ~y-46)
+  const bx = Math.round(STAGE_W - w - 6);
+  const by = Math.round(s.y - h - 60);
+
+  // shadow + paper
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.fillRect(bx + 2, by + 2, w, h);
+  ctx.fillStyle = "#fdfaf5";
+  ctx.fillRect(bx, by, w, h);
+  ctx.strokeStyle = "#1a1814";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+
+  // header band — navy, like the teacher's blazer
+  ctx.fillStyle = "#2a3858";
+  ctx.fillRect(bx, by, w, headH);
+  ctx.fillStyle = "#fdfaf5";
+  ctx.font = "bold 10px ui-monospace, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("evals.json", bx + 5, by + 13);
+  ctx.font = "8px ui-monospace, monospace";
+  ctx.fillText("actual vs expected", bx + 76, by + 13);
+
+  // column headers
+  ctx.font = "8px ui-monospace, monospace";
+  ctx.fillStyle = "#8a8478";
+  ctx.fillText("ACTUAL",   bx + 70, by + headH + 4);
+  ctx.fillText("EXPECTED", bx + 128, by + headH + 4);
+
+  // rows
+  ctx.font = "9px ui-monospace, monospace";
+  card.lines.forEach((ln, i) => {
+    const ly = by + headH + padTop + i * lh + 4;
+    ctx.fillStyle = "#1a1814";
+    ctx.fillText(ln.label, bx + 5, ly + 4);
+    // actual
+    let col = "#1a1814";
+    if (ln.status === "fail") col = "#d4452f";
+    else if (ln.status === "pass") col = "#3a7a3a";
+    else if (ln.status === "skip") col = "#8a8478";
+    ctx.fillStyle = col;
+    ctx.fillText(ln.actual ?? "—", bx + 70, ly + 4);
+    ctx.fillStyle = "#1a1814";
+    ctx.fillText(ln.expected ?? "—", bx + 128, ly + 4);
+    // marker on far right
+    let mark = "·", mcol = "#bba";
+    if (ln.status === "pass") { mark = "✓"; mcol = "#3a7a3a"; }
+    else if (ln.status === "fail") { mark = "✗"; mcol = "#d4452f"; }
+    else if (ln.status === "skip") { mark = "–"; mcol = "#bba"; }
+    ctx.fillStyle = mcol;
+    ctx.font = "bold 11px ui-monospace, monospace";
+    ctx.fillText(mark, bx + w - 12, ly + 5);
+    ctx.font = "9px ui-monospace, monospace";
+  });
+  ctx.textAlign = "start";
+}
+
+/* ─ "Thinking" callouts above stations ─
+ * These make the agent's reasoning visible: which line of the recipe
+ * (SKILL) is being checked, which tool (MCP) is being picked from the
+ * box, what query went to the DB and what came back. */
+
+// Recipe card: floats above the lectern, drawn as a torn paper sheet
+// with a header band and numbered steps with checkboxes.
+function drawRecipeCard() {
+  if (!state.recipeCard) return;
+  const s = STATIONS.skill;
+  const lines = state.recipeCard.lines;
+  const w = 150, lh = 13, headH = 18, padTop = 4, padBot = 6;
+  const h = headH + padTop + lines.length * lh + padBot;
+  // float above and to the right of the lectern, clear of agent's head
+  const bx = Math.round(s.x - 8);
+  const by = Math.round(s.y - h - 22);
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillRect(bx + 2, by + 2, w, h);
+  // paper
+  ctx.fillStyle = "#fbf3df";
+  ctx.fillRect(bx, by, w, h);
+  ctx.strokeStyle = "#1a1814";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+  // dog-ear top-right corner
+  ctx.fillStyle = "#e8dcc0";
+  ctx.beginPath();
+  ctx.moveTo(bx + w - 6, by);
+  ctx.lineTo(bx + w, by + 6);
+  ctx.lineTo(bx + w - 6, by + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#bba";
+  ctx.beginPath();
+  ctx.moveTo(bx + w - 6, by);
+  ctx.lineTo(bx + w - 6, by + 6);
+  ctx.lineTo(bx + w, by + 6);
+  ctx.stroke();
+
+  // header band (red)
+  ctx.fillStyle = "#d4452f";
+  ctx.fillRect(bx, by, w, headH);
+  ctx.fillStyle = "#fdfaf5";
+  ctx.font = "bold 10px ui-monospace, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("SKILL.md", bx + 5, by + 13);
+  ctx.font = "8px ui-monospace, monospace";
+  ctx.fillText("instrukce / recept", bx + 64, by + 13);
+
+  // numbered step lines with [ ] checkboxes that fill in
+  ctx.font = "9px ui-monospace, monospace";
+  lines.forEach((ln, i) => {
+    const ly = by + headH + padTop + i * lh;
+    // step number
+    ctx.fillStyle = "#8a8478";
+    ctx.fillText((i + 1) + ".", bx + 5, ly + 9);
+    // checkbox
+    const cx = bx + 18, cy = ly + 1;
+    ctx.fillStyle = "#fdfaf5";
+    ctx.fillRect(cx, cy, 9, 9);
+    ctx.strokeStyle = "#1a1814";
+    ctx.strokeRect(cx + 0.5, cy + 0.5, 8, 8);
+    // mark inside checkbox
+    let mark = "", col = "#1a1814";
+    if      (ln.status === "pass") { mark = "✓"; col = "#3a7a3a"; }
+    else if (ln.status === "fail") { mark = "✗"; col = "#d4452f"; }
+    else if (ln.status === "skip") { mark = "–"; col = "#bba"; }
+    ctx.fillStyle = col;
+    ctx.font = "bold 9px ui-monospace, monospace";
+    ctx.fillText(mark, cx + 1, cy + 8);
+    // label
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.fillStyle = (ln.status === "skip") ? "#bba" : "#1a1814";
+    ctx.fillText(ln.text, cx + 14, ly + 9);
+  });
+}
+
+function drawToolbox() {
+  if (!state.toolbox) return;
+  const s = STATIONS.mcp;
+  const tools = [
+    { key: "list_tables",    short: "list_tables" },
+    { key: "describe_table", short: "describe"    },
+    { key: "execute_query",  short: "execute"     },
+  ];
+  // vertical column of 3 chips above the chest — clearer + no horizontal overlap
+  // chest sits LEFT of agent → chest center ≈ s.x - 21
+  const chipW = 78, chipH = 14, gap = 2;
+  const totalH = chipH * 3 + gap * 2;
+  const chestCenterX = s.x - 21;
+  const bx = Math.round(chestCenterX - chipW / 2);
+  const by = Math.round(s.y - 12 - totalH - 34); // sit above chest, well above agent head
+
+  ctx.font = "bold 9px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  tools.forEach((t, i) => {
+    const cy = by + i * (chipH + gap);
+    const isPicked = state.toolbox.picked === t.key;
+    const dimmed = state.toolbox.picked && !isPicked;
+    // shadow
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(bx + 1, cy + 1, chipW, chipH);
+    // chip
+    if (isPicked)      ctx.fillStyle = "#d4452f";
+    else if (dimmed)   ctx.fillStyle = "#c9c0ad";
+    else               ctx.fillStyle = "#fdfaf5";
+    ctx.fillRect(bx, cy, chipW, chipH);
+    ctx.strokeStyle = isPicked ? "#1a1814" : "#8a8478";
+    ctx.strokeRect(bx + 0.5, cy + 0.5, chipW - 1, chipH - 1);
+    ctx.fillStyle = isPicked ? "#fdfaf5" : (dimmed ? "#bba" : "#1a1814");
+    ctx.fillText(t.short, bx + chipW / 2, cy + chipH - 4);
+  });
+  ctx.textAlign = "start";
+}
+
+function drawAgent() {
+  const a = state.agent;
+  // Always pick a directional sprite by facing — never the bundled-with-desk
+  // juliaPC spritesheet (it draws the agent welded into a workstation, which
+  // looks like a "spinning computer" at our small office stations).
+  let sheet;
+  // Idle = standing still with no specific activity → face us (front idle).
+  // Reading/tooling/drawing keep the directional sheet so we still see
+  // her oriented at the station, but she's locked to a single frame.
+  const isIdle = !a.moving && (!a.activity || a.activity === "idle");
+  if (isIdle) {
+    sheet = images.juliaIdle;
+  } else if (!a.moving) {
+    if (a.facing === "up")         sheet = images.juliaUp;
+    else if (a.facing === "left")  sheet = images.juliaLeft;
+    else if (a.facing === "right") sheet = images.juliaRight;
+    else                           sheet = images.juliaIdle;
+  } else if (a.facing === "up")    sheet = images.juliaUp;
+    else if (a.facing === "left")  sheet = images.juliaLeft;
+    else if (a.facing === "right") sheet = images.juliaRight;
+    else                           sheet = images.juliaForward;
+
+  if (!sheet) return; // assets still loading
+
+  // Sheet layouts differ:
+  //   Julia-Idle.png            128×32   →  4 frames of 32×32 in one row
+  //   Julia_walk_<dir>.png      256×64   →  4 frames of 64×64 in one row
+  // Sample each sheet at its actual frame size — sampling 32×40 from the
+  // walk sheets used to splice half-of-frame-0 with the top of row-2,
+  // chopping the sprite at the torso during the walk cycle.
+  const cols = 4;
+  const frameW = Math.floor(sheet.width / cols);
+  const frameH = sheet.height;
+  const sx = a.frame * frameW;
+  // Walk-sheet content sits roughly y=15..47 of a 64-px cell — anchor at
+  // the visual feet (~ 0.74 × frameH) rather than the cell bottom so
+  // the agent doesn't appear to float over the floor labels.
+  const footAnchor = frameH > 32 ? Math.round(frameH * 0.74) : frameH;
+  const drawX = Math.round(a.x - frameW / 2);
+  const drawY = Math.round(a.y - footAnchor + 4);
+  ctx.drawImage(sheet, sx, 0, frameW, frameH, drawX, drawY, frameW, frameH);
+}
+
+function drawBubble(b) {
+  ctx.font = "bold 10px ui-monospace, monospace";
+  const lines = (b.text || "").split("\n");
+  const padding = 5;
+  const lh = 11;
+  let textW = 0;
+  for (const ln of lines) textW = Math.max(textW, ctx.measureText(ln).width);
+  const w = Math.ceil(textW) + padding * 2;
+  const h = lines.length * lh + padding * 2 - 2;
+
+  // place above the sprite, but clamp inside canvas left/right
+  let bx = Math.round(b.x - w / 2);
+  if (bx < 4) bx = 4;
+  if (bx + w > 476) bx = 476 - w;
+  const by = Math.round(b.y - SPRITE_H - h - 4);
+
+  if (b.kind === "thought") {
+    // thought cloud: actual scalloped lobes top + bottom, light blue fill
+    ctx.fillStyle = "#e8eef9";
+    ctx.strokeStyle = "#3a4a7a";
+    ctx.lineWidth = 1;
+    const lobeR = 4; // lobe radius
+    // build a path of overlapping bumps along all 4 edges
+    ctx.beginPath();
+    // top edge: bumps going right
+    let x = bx;
+    ctx.moveTo(bx, by + lobeR);
+    while (x + lobeR * 2 <= bx + w) {
+      ctx.arc(x + lobeR, by + lobeR, lobeR, Math.PI, 0, false);
+      x += lobeR * 2;
+    }
+    // right edge: bumps going down
+    let y = by + lobeR * 2;
+    while (y + lobeR * 2 <= by + h) {
+      ctx.arc(bx + w - lobeR, y, lobeR, -Math.PI / 2, Math.PI / 2, false);
+      y += lobeR * 2;
+    }
+    // bottom edge: bumps going left
+    x = bx + w;
+    while (x - lobeR * 2 >= bx) {
+      ctx.arc(x - lobeR, by + h - lobeR, lobeR, 0, Math.PI, false);
+      x -= lobeR * 2;
+    }
+    // left edge: bumps going up
+    y = by + h - lobeR * 2;
+    while (y - lobeR * 2 >= by) {
+      ctx.arc(bx + lobeR, y, lobeR, Math.PI / 2, Math.PI * 1.5, false);
+      y -= lobeR * 2;
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // dotted tail toward sprite head
+    const tailX = Math.max(bx + 6, Math.min(bx + w - 6, b.x));
+    ctx.fillStyle = "#e8eef9";
+    ctx.beginPath();
+    ctx.arc(tailX, by + h + 5, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(tailX + 2, by + h + 11, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // text in dark blue (thought color)
+    ctx.fillStyle = "#1f2c5a";
+  } else {
+    // speech rectangle
+    ctx.fillStyle = "#fdfaf5";
+    ctx.fillRect(bx, by, w, h);
+    ctx.strokeStyle = "#1a1814";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+    // pointed tail
+    const tailX = Math.max(bx + 4, Math.min(bx + w - 4, b.x));
+    ctx.fillStyle = "#fdfaf5";
+    ctx.fillRect(tailX - 1, by + h, 3, 3);
+    ctx.fillStyle = "#1a1814";
+  }
+
+  // text lines
+  lines.forEach((ln, i) => {
+    ctx.fillText(ln, bx + padding, by + padding + 6 + i * lh);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * ANIMATION LOOP
+ * ═══════════════════════════════════════════════════════════════════ */
+
+let lastT = performance.now();
+function loop(t) {
+  const dt = t - lastT;
+  lastT = t;
+
+  // animate frames — walking is brisk, reading/tooling/drawing are slow.
+  // Pure idle (standing still, no activity) freezes on frame 0 so the
+  // agent stops looking like she's nervously bouncing in place.
+  const a = state.agent;
+  if (a.moving || (a.activity && a.activity !== "idle")) {
+    const frameInterval = (a.activity === "walking" || a.moving) ? 140 : 420;
+    a.frameTime += dt;
+    if (a.frameTime > frameInterval) {
+      a.frameTime = 0;
+      a.frame = (a.frame + 1) % FRAMES;
+    }
+  } else {
+    a.frame = 0;
+    a.frameTime = 0;
+  }
+
+  // teacher walk cycle (own clock, slower)
+  if (state.teacher && state.teacher.walking) {
+    state.teacher.frameTime = (state.teacher.frameTime || 0) + dt;
+    if (state.teacher.frameTime > 180) {
+      state.teacher.frameTime = 0;
+      state.teacher.frame = (state.teacher.frame || 0) + 1;
+    }
+  }
+
+  // bubble TTL
+  if (state.bubble) {
+    state.bubble.ttl -= dt;
+    if (state.bubble.ttl <= 0) state.bubble = null;
+  }
+
+  // step cursor (movement updates)
+  if (state.stepCursor) state.stepCursor(dt);
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * STEP PRIMITIVES — building blocks for scenarios
+ * each returns a Promise that resolves when the step completes
+ * ═══════════════════════════════════════════════════════════════════ */
+
+function wait(ms) {
+  return new Promise(res => setTimeout(res, ms));
+}
+
+function moveTo(targetX, targetY) {
+  return new Promise(res => {
+    const a = state.agent;
+    const speed = 50; // px/s
+    state.stepCursor = (dt) => {
+      const dx = targetX - a.x;
+      const dy = targetY - a.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 1) {
+        a.moving = false;
+        state.stepCursor = null;
+        res();
+        return;
+      }
+      a.moving = true;
+      const step = (speed * dt) / 1000;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      a.x += nx * Math.min(step, dist);
+      a.y += ny * Math.min(step, dist);
+      // facing
+      if (Math.abs(dx) > Math.abs(dy)) a.facing = dx > 0 ? "right" : "left";
+      else                              a.facing = dy > 0 ? "down" : "up";
+    };
+  });
+}
+
+function gotoStation(key) {
+  const s = STATIONS[key];
+  return moveTo(s.x, s.y);
+}
+
+function say(text, ms = 2400) {
+  state.bubble = { text, x: state.agent.x, y: state.agent.y, ttl: ms, kind: "speech" };
+  return wait(ms);
+}
+
+function teacherSay(text, ms = 2600) {
+  if (!state.teacher) return wait(ms);
+  state.bubble = { text, x: state.teacher.x, y: state.teacher.y, ttl: ms, kind: "speech" };
+  return wait(ms);
+}
+
+// Thought bubble — agent's internal reasoning. Cloud-shaped, blue text.
+function think(text, ms = 3000) {
+  state.bubble = { text, x: state.agent.x, y: state.agent.y, ttl: ms, kind: "thought" };
+  return wait(ms);
+}
+
+function activity(name, ms) {
+  state.agent.activity = name;
+  state.agent.moving = false;
+  return wait(ms).then(() => { state.agent.activity = "idle"; });
+}
+
+// Skill panel primitives — drive the HTML panel under the stage
+function clearRules() {
+  state.ruleStatus = {};
+  renderSkillPanel();
+}
+function setCheck(key, status) {
+  state.ruleStatus[key] = status;
+  renderSkillPanel();
+}
+
+function setEval(key, status) {
+  state.evalStatus[key] = status;
+  renderEvalsPanel();
+}
+
+/* Teacher (evals.json) primitives.
+ * She lives off-screen at the right edge until walkInTeacher pulls her
+ * over to the dashboard. The clipboard appears in her hands once she
+ * arrives — that's the "expected.json" reference she compares against. */
+
+// Teacher stands at the top-left of the room, in clear floor space
+// above the agent's walking lane. She's a separate, visibly distinct
+// character — not blocking the dashboard, the whiteboard report card,
+// the agent's stations, or the agent's path along the bottom lane.
+const TEACHER_GRADE_X = 86;
+const TEACHER_Y = 158;
+
+function spawnTeacher() {
+  state.teacher = {
+    x: TEACHER_GRADE_X,
+    y: TEACHER_Y,
+    walking: false,
+    frame: 0,
+    frameTime: 0,
+    holdingCard: false,
+    verdict: null,
+  };
+}
+// Teacher is now permanent — kept for symmetry with spawnTeacher but
+// no longer called from grading. Only resetAll() should call this.
+function despawnTeacher() {
+  state.teacher = null;
+  state.reportCard = null;
+}
+
+async function walkTeacherTo(targetX) {
+  if (!state.teacher) spawnTeacher();
+  state.teacher.walking = true;
+  return new Promise(resolve => {
+    state.stepCursor = (dt) => {
+      const t = state.teacher;
+      if (!t) { state.stepCursor = null; resolve(); return; }
+      const dx = targetX - t.x;
+      const speed = 0.06; // px per ms
+      const step = speed * dt;
+      if (Math.abs(dx) <= step) {
+        t.x = targetX;
+        t.walking = false;
+        state.stepCursor = null;
+        resolve();
+      } else {
+        t.x += Math.sign(dx) * step;
+      }
+    };
+  });
+}
+
+function openReportCard(rows) {
+  // rows: [{label, actual, expected}]
+  state.reportCard = {
+    lines: rows.map(r => ({ ...r, status: "pending" })),
+    tone: "ok",
+  };
+}
+function setReportRow(idx, status) {
+  if (!state.reportCard) return;
+  if (state.reportCard.lines[idx]) state.reportCard.lines[idx].status = status;
+}
+function closeReportCard() { state.reportCard = null; }
+
+/* Full eval scene: walk teacher in from the right, hold up the
+ * expected.json clipboard, grade row-by-row (also setting the legacy
+ * evals panel for the bottom rail), stamp final verdict, walk away.
+ * rows: [{key, label, actual, expected, verdict}]   (verdict per-row)
+ * opts.finalVerdict: "pass"|"warn"|"fail"
+ * opts.headline:     short Czech sentence she "says" at the end */
+async function runTeacherGrading(rows, opts = {}) {
+  if (!state.teacher) spawnTeacher();
+  logLine("skill", "evals: učitelka kontroluje výsledek");
+  state.teacher.verdict = null;
+  state.teacher.holdingCard = true;
+  await wait(300);
+  openReportCard(rows.map(r => ({
+    label: r.label, actual: r.actual, expected: r.expected,
+  })));
+  await wait(700);
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    setReportRow(i, r.verdict);
+    setEval(r.key, r.verdict);
+    if (r.verdict === "fail")  logLine("fail", `eval[${r.label}]: actual=${r.actual} ≠ expected=${r.expected}`);
+    if (r.verdict === "pass")  logLine("ok",   `eval[${r.label}]: ${r.actual} ✓`);
+    if (r.verdict === "warn")  logLine("warn", `eval[${r.label}]: ${r.actual} ≈ ${r.expected}`);
+    await wait(620);
+  }
+  await wait(500);
+  state.teacher.verdict = opts.finalVerdict || "pass";
+  if (opts.headline) await teacherSay(opts.headline, 1500);
+  await wait(1100);
+  // teacher stays in the room; just lower the clipboard and clear the side card
+  state.teacher.holdingCard = false;
+  closeReportCard();
+}
+
+
+// MCP panel primitives — drive the HTML panel + chest sprite on canvas
+function openMcp(tool = null) {
+  state.mcpOpen = true;
+  state.mcpTool = tool;
+  state.toolbox = { open: true, picked: null };
+  renderMcpPanel();
+}
+function setTool(tool) {
+  state.mcpTool = tool;
+  if (tool) state.toolStatus[tool] = "used";
+  if (state.toolbox) state.toolbox.picked = tool;
+  renderMcpPanel();
+}
+function closeMcp() {
+  state.mcpOpen = false;
+  state.mcpTool = null;
+  state.toolbox = null;
+  renderMcpPanel();
+}
+
+// Recipe-card primitives — drive the SKILL station "thinking" overlay
+function openRecipe() {
+  state.recipeCard = {
+    lines: RULES.map(r => ({
+      text: r.short,
+      status: state.skillOn && state.rules[r.key] ? "pending" : "skip",
+    })),
+  };
+}
+function setRecipeLine(key, status) {
+  if (!state.recipeCard) return;
+  const idx = RULES.findIndex(r => r.key === key);
+  if (idx >= 0) state.recipeCard.lines[idx].status = status;
+}
+function closeRecipe() { state.recipeCard = null; }
+
+// DB terminal primitives — drive the HTML console panel under the stage.
+// Tiny canvas monitor stays as decoration on the desk; the readable action
+// happens in the terminal so participants can actually parse SQL and rows.
+function showDbTerminal(toolLabel = "mcp-snowflake · execute_query") {
+  const panel = document.getElementById("db-terminal");
+  const sqlEl = document.getElementById("db-term-sql");
+  const resEl = document.getElementById("db-term-result");
+  const tool  = document.getElementById("db-term-tool");
+  const stEl  = document.getElementById("db-term-state");
+  if (!panel) return;
+  panel.classList.remove("hidden", "idle");
+  if (sqlEl) sqlEl.innerHTML = '<span class="caret"></span>';
+  if (resEl) resEl.textContent = "";
+  if (tool)  tool.textContent = toolLabel;
+  if (stEl)  stEl.textContent = "live";
+}
+function hideDbTerminal() {
+  const panel = document.getElementById("db-terminal");
+  const sqlEl = document.getElementById("db-term-sql");
+  const resEl = document.getElementById("db-term-result");
+  const tool  = document.getElementById("db-term-tool");
+  const stEl  = document.getElementById("db-term-state");
+  if (panel) { panel.classList.remove("hidden"); panel.classList.add("idle"); }
+  if (sqlEl) sqlEl.innerHTML = "";
+  if (resEl) resEl.innerHTML = "";
+  if (tool)  tool.textContent = "mcp-snowflake · čeká";
+  if (stEl)  stEl.textContent = "idle";
+}
+// Type SQL char-by-char with a blinking caret at the end.
+async function typeDbSql(lines, msPerLine = 380) {
+  const sqlEl = document.getElementById("db-term-sql");
+  if (!sqlEl) return;
+  const fullText = lines.join("\n");
+  // ~14ms per char keeps total close to msPerLine × lines but reads much
+  // more like a human typing than line-jumps.
+  const total = msPerLine * lines.length;
+  const perChar = Math.max(8, Math.min(28, Math.round(total / Math.max(1, fullText.length))));
+  let typed = "";
+  for (const ch of fullText) {
+    typed += ch;
+    sqlEl.innerHTML = escHtml(typed) + '<span class="caret"></span>';
+    await wait(perChar);
+  }
+}
+// Stream result rows one by one, with optional row class ("ok"/"warn"/"fail").
+async function streamDbRows(rows, msPerRow = 320) {
+  const resEl = document.getElementById("db-term-result");
+  if (!resEl) return;
+  for (const r of rows) {
+    const text = typeof r === "string" ? r : r.text;
+    const cls  = typeof r === "string" ? "" : (r.cls || "");
+    const div = document.createElement("div");
+    div.className = "row" + (cls ? " " + cls : "");
+    div.textContent = text;
+    resEl.appendChild(div);
+    await wait(msPerRow);
+  }
+}
+// Back-compat shims (state.dbScreen no longer drawn on canvas, but a few
+// scenario branches read it elsewhere — keep the no-op API).
+function openDbScreen() { /* terminal opens via showDbTerminal in scenarios */ }
+function closeDbScreen() { /* terminal closes via hideDbTerminal in scenarios */ }
+
+// Chart primitives
+async function drawChartBar(tone) {
+  state.chartTone = tone;
+  state.chartShown = true;
+  for (let i = 0; i < 5; i++) {
+    state.chartBars = i + 1;
+    await wait(180);
+  }
+}
+function clearChart() {
+  state.chartBars = 0;
+  state.chartShown = false;
+}
+
+// Full HTML dashboard — the "this is what you can build" payoff.
+// Renders real numbers below the stage when a clean run finishes.
+// Scenario A = top-10 countries by attack count.
+// Scenario C = JOIN preview (country code → resolved name + attack count).
+//   When the JOIN runs against COUNTRY_DIRTYDATA, the same code resolves
+//   to two names — that's the "leak" learners can spot in the preview.
+const TOP10 = [
+  { country: "Iraq",        n: 15400 },
+  { country: "Afghanistan", n: 12970 },
+  { country: "Pakistan",    n:  6112 },
+  { country: "India",       n:  5700 },
+  { country: "Yemen",       n:  4847 },
+  { country: "Nigeria",     n:  4012 },
+  { country: "Philippines", n:  4007 },
+  { country: "Somalia",     n:  3681 },
+  { country: "Syria",       n:  2332 },
+  { country: "Libya",       n:  2139 },
+];
+const JOIN_CLEAN = [
+  { code: "95",  name: "Iraq",        n: 15400 },
+  { code: "4",   name: "Afghanistan", n: 12970 },
+  { code: "153", name: "Pakistan",    n:  6112 },
+  { code: "92",  name: "India",       n:  5700 },
+  { code: "228", name: "Yemen",       n:  4847 },
+  { code: "147", name: "Nigeria",     n:  4012 },
+  { code: "160", name: "Philippines", n:  4007 },
+  { code: "200", name: "Somalia",     n:  3681 },
+];
+// Same query against the dirty table: a few country codes appear twice
+// because DIRTYDATA carries duplicate rows under slightly different names.
+const JOIN_DIRTY = [
+  { code: "95",  name: "Iraq",        n: 15400 },
+  { code: "95",  name: "Iraq, Republic of", n: 15400, dup: true },
+  { code: "4",   name: "Afghanistan", n: 12970 },
+  { code: "153", name: "Pakistan",    n:  6112 },
+  { code: "153", name: "Pakistan (Islamic Rep.)", n: 6112, dup: true },
+  { code: "92",  name: "India",       n:  5700 },
+  { code: "228", name: "Yemen",       n:  4847 },
+  { code: "228", name: "Yemen, Rep.", n:  4847, dup: true },
+];
+
+function showFullDashboard(tone = "ok", source = "clean", scenario = "A") {
+  const dash = document.getElementById("full-dashboard");
+  const bars = document.getElementById("dash-bars");
+  const tag  = document.getElementById("dash-tag");
+  const title = document.getElementById("dash-title");
+  const meta = document.getElementById("dash-source");
+  if (!dash || !bars) return;
+
+  dash.classList.remove("hidden", "warn", "fail");
+  if (tone === "warn") dash.classList.add("warn");
+  if (tone === "fail") dash.classList.add("fail");
+
+  if (tone === "warn")      tag.textContent = "varování · DIRTYDATA leak";
+  else if (tone === "fail") tag.textContent = "tichý fail · zkontrolovat!";
+  else                      tag.textContent = source === "clean" ? "čistý výsledek" : "ready";
+
+  bars.innerHTML = "";
+
+  if (scenario === "C") {
+    if (title) title.textContent = "JOIN: kód země → název";
+    const rows = source === "clean" ? JOIN_CLEAN : JOIN_DIRTY;
+    if (meta) meta.textContent = source === "clean"
+      ? "TEROR ⨯ COUNTRY · 204 řádků · 1× / země"
+      : "TEROR ⨯ COUNTRY_DIRTYDATA · 408 řádků · duplicity";
+    const max = Math.max(...rows.map(r => r.n));
+    rows.forEach((row, i) => {
+      const r = document.createElement("div");
+      r.className = "dash-bar-row" + (row.dup ? " dup" : "");
+      const pct = Math.max(2, Math.round((row.n / max) * 100));
+      r.innerHTML =
+        '<span class="country">' + row.code + ' → ' + row.name + (row.dup ? ' <em class="dup-tag">duplicate</em>' : '') + '</span>' +
+        '<div class="bar-track"><div class="bar-fill" style="width: ' + pct + '%; animation-delay: ' + (i * 60) + 'ms"></div></div>' +
+        '<span class="value">' + row.n.toLocaleString("cs-CZ") + '</span>';
+      bars.appendChild(r);
+    });
+    return;
+  }
+
+  // Scenario A (and the default): top-10 countries by attack count.
+  if (title) title.textContent = "Top 10 zemí podle počtu útoků";
+  if (meta) meta.textContent = "TEROR · 84 341 řádků · 153 zemí";
+  const max = TOP10[0].n;
+  TOP10.forEach((row, i) => {
+    const r = document.createElement("div");
+    r.className = "dash-bar-row";
+    const pct = Math.max(2, Math.round((row.n / max) * 100));
+    r.innerHTML =
+      '<span class="country">' + row.country + '</span>' +
+      '<div class="bar-track"><div class="bar-fill" style="width: ' + pct + '%; animation-delay: ' + (i * 60) + 'ms"></div></div>' +
+      '<span class="value">' + row.n.toLocaleString("cs-CZ") + '</span>';
+    bars.appendChild(r);
+  });
+}
+
+function hideFullDashboard() {
+  const dash = document.getElementById("full-dashboard");
+  if (dash) dash.classList.add("hidden");
+}
+
+function logLine(kind, text) {
+  state.log.push({ kind, text });
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById("log");
+  el.innerHTML = state.log.map(l => `<div class="line ${l.kind}">${escHtml(l.text)}</div>`).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderSkillPanel() {
+  const panel = document.getElementById("skill-panel");
+  const wrap  = document.getElementById("skill-rows");
+  if (!panel || !wrap) return;
+  panel.classList.toggle("off", !state.skillOn);
+  wrap.innerHTML = RULES.map(r => {
+    const enabled = state.skillOn && state.rules[r.key];
+    const status  = state.ruleStatus[r.key]; // "pass" | "fail" | "skip" | undefined
+    let cls = "rule-row";
+    let icon = "·";
+    if (!enabled) {
+      cls += " disabled";
+      icon = "·";
+    } else if (status === "pass")  { cls += " fired-pass"; icon = "✓"; }
+    else if (status === "fail")    { cls += " fired-fail"; icon = "✗"; }
+    else if (status === "skip")    { cls += " skipped";    icon = "–"; }
+    return `<div class="${cls}">
+      <div class="icon">${icon}</div>
+      <div class="label">${escHtml(r.label)}<small>${escHtml(r.pattern)}</small></div>
+    </div>`;
+  }).join("");
+}
+
+function renderMcpPanel() {
+  const panel = document.getElementById("mcp-panel");
+  const wrap  = document.getElementById("mcp-rows");
+  if (!panel || !wrap) return;
+  const enabled = state.mcpOn;
+  panel.classList.toggle("off", !enabled);
+  wrap.innerHTML = TOOLS.map(t => {
+    const active = enabled && state.mcpTool === t.key;
+    const used   = enabled && state.toolStatus[t.key] === "used";
+    let cls = "tool-row";
+    let icon = "·";
+    if (!enabled) cls += " disabled";
+    else if (active) { cls += " active"; icon = "▶"; }
+    else if (used)   { cls += " fired-pass"; icon = "✓"; }
+    return `<div class="${cls}">
+      <div class="icon">${icon}</div>
+      <div class="label">${escHtml(t.label)}<small>${escHtml(t.sub)}</small></div>
+    </div>`;
+  }).join("");
+}
+
+function renderEvalsPanel() {
+  const panel = document.getElementById("evals-panel");
+  const wrap  = document.getElementById("evals-rows");
+  if (!panel || !wrap) return;
+  panel.classList.toggle("off", !state.evalsOn);
+  wrap.innerHTML = EVALS.map(e => {
+    const enabled = state.evalsOn;
+    const status  = state.evalStatus[e.key];
+    let cls = "rule-row";
+    let icon = "·";
+    if (!enabled) {
+      cls += " disabled";
+    } else if (status === "pass") { cls += " fired-pass"; icon = "✓"; }
+    else if (status === "fail")   { cls += " fired-fail"; icon = "✗"; }
+    else if (status === "skip")   { cls += " skipped";    icon = "–"; }
+    return `<div class="${cls}">
+      <div class="icon">${icon}</div>
+      <div class="label">${escHtml(e.label)}<small>${escHtml(e.tag)}</small></div>
+    </div>`;
+  }).join("");
+}
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * SCENARIOS — narrative coherent with stack-trace demo
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Pre-mark all four rules as "pending" for this run so the panel shows
+ * untouched rules in their default (enabled-but-grey) state, then we tick
+ * them off one by one as the agent walks past SKILL. */
+function beginRun() {
+  state.ruleStatus = {};
+  state.evalStatus = {};
+  state.toolStatus = {};
+  state.mcpOpen = false;
+  state.mcpTool = null;
+  state.chartBars = 0;
+  state.chartShown = false;
+  state.recipeCard = null;
+  state.toolbox = null;
+  state.dbScreen = null;
+  // Teacher is permanent — clear the report card + verdict but keep her in the room.
+  spawnTeacher();
+  hideFullDashboard();
+  hideDbTerminal();
+  renderSkillPanel();
+  renderMcpPanel();
+  renderEvalsPanel();
+}
+
+/* Walk past skill: tick each rule per its status.
+ *   predicates[key] can be:
+ *     - undefined / false / null → rule didn't match the SQL → "pass"
+ *     - "block"                  → rule matched a destructive thing → "fail" (red)
+ *     - "rewrite"                → rule matched and rewrote the SQL → "pass" (green) + log line
+ *   Rule with toggle off → "skip" (dim).
+ *   Returns the first rule that returned "block" (so the caller can short-circuit). */
+async function walkSkillStation(predicates) {
+  await gotoStation("skill");
+  state.agent.facing = "up";
+  state.agent.activity = "reading";
+  openRecipe();
+  logLine("skill", `SKILL loaded: sql-review.md (${RULES.length} pravidel)`);
+  await wait(400);
+  let blockedBy = null;
+  for (const r of RULES) {
+    await wait(380);
+    if (!state.rules[r.key]) {
+      setCheck(r.key, "skip");
+      setRecipeLine(r.key, "skip");
+      continue;
+    }
+    const verdict = predicates[r.key];
+    if (verdict === "block") {
+      setCheck(r.key, "fail");
+      setRecipeLine(r.key, "fail");
+      logLine("fail", `pravidlo „${r.short}" — blokuje SQL`);
+      blockedBy = blockedBy || r;
+    } else if (verdict === "rewrite") {
+      setCheck(r.key, "pass");
+      setRecipeLine(r.key, "pass");
+      logLine("ok", `pravidlo „${r.short}" — přepsalo SQL`);
+    } else {
+      setCheck(r.key, "pass");
+      setRecipeLine(r.key, "pass");
+    }
+  }
+  state.agent.activity = "idle";
+  await wait(500);
+  closeRecipe();
+  return blockedBy;
+}
+
+async function useTool(tool) {
+  setTool(tool);
+  await wait(900);
+}
+
+async function runScenarioA() {
+  // Clean path: SELECT COUNTRY_TXT, COUNT(*) FROM TEROR GROUP BY COUNTRY_TXT ORDER BY 2 DESC LIMIT 10
+  // No JOIN with COUNTRY needed — COUNTRY_TXT already lives in TEROR. All 4 rules pass green.
+  beginRun();
+
+  await gotoStation("inbox");
+  await say("nový prompt!", 900);
+  logLine("info", "PROMPT: Top 10 zemí podle počtu útoků");
+  await think("aha — chce top-10 zemí.\npotřebuju COUNT z TEROR\na seřadit DESC", 2200);
+
+  if (state.skillOn) {
+    await think("nejdřív checklist —\nco SKILL zakazuje?", 1600);
+    await walkSkillStation({});
+    await think("vše zelené —\nmůžu jít na MCP", 1500);
+  } else {
+    logLine("warn", "skill je vypnut — žádná pre-flight kontrola");
+    await think("skill je OFF —\npreflight přeskakuju", 1400);
+  }
+
+  if (!state.mcpOn) {
+    await gotoStation("mcp");
+    await say("MCP off — nemůžu na DB", 1500);
+    logLine("fail", "MCP server je OFF — žádný execute_query");
+    state.running = false; return;
+  }
+
+  await gotoStation("mcp");
+  openMcp();
+  await think("MCP server zná 3 nástroje.\nkterý použiju?", 1800);
+  await useTool("list_tables");
+  await think("1) list_tables —\njaké tabulky existují?", 1500);
+  await useTool("describe_table");
+  await think("2) describe_table TEROR —\njaké má sloupce?", 1500);
+  await useTool("execute_query");
+  await think("3) execute_query —\nteď spustím SELECT", 1400);
+  logLine("info", "MCP: execute_query(SQL)");
+  closeMcp();
+
+  await gotoStation("db");
+  state.agent.facing = "left";
+  state.agent.activity = "tooling";
+  showDbTerminal("snowflake-czechitas · execute_query");
+  await typeDbSql([
+    "SELECT COUNTRY_TXT,",
+    "  COUNT(*) AS n",
+    "FROM COURSES.SCH_TEROR.TEROR",
+    "GROUP BY 1",
+    "ORDER BY n DESC",
+    "LIMIT 10;",
+  ], 380);
+  await think("query odeslána —\nčekám na výsledek", 1400);
+  await streamDbRows([
+    { text: "COUNTRY_TXT       N",        cls: "" },
+    { text: "─────────────────────",     cls: "" },
+    { text: "Iraq          15 400",       cls: "ok" },
+    { text: "Afghanistan   12 970",       cls: "ok" },
+    { text: "Pakistan       6 112",       cls: "ok" },
+    { text: "India          5 700",       cls: "ok" },
+    { text: "Yemen          4 847",       cls: "ok" },
+    { text: "… (5 more)",                 cls: "" },
+    { text: "→ 10 rows · 84 341 scanned", cls: "ok" },
+  ], 240);
+  logLine("info", "DB → TEROR (84341 řádků, 153 zemí) → LIMIT 10");
+  await wait(900);
+  state.agent.activity = "idle";
+
+  let chartTone = "ok";
+  let renderedChart = false;
+  if (state.skillOn && state.rules.renderChart) {
+    await gotoStation("board");
+    await say("pravidlo RENDER_CHART —\nkreslím graf", 1200);
+    await drawChartBar(chartTone);
+    showFullDashboard("ok", "clean", "A");
+    logLine("ok", "DASHBOARD: top 10 zemí — ready to ship");
+    renderedChart = true;
+  } else {
+    const reason = !state.skillOn
+      ? "bez skillu nevím,\nco s daty —\nvrátím syrová čísla"
+      : "RENDER_CHART je OFF —\nvracím jen řádky";
+    await think(reason, 2000);
+    await say("Iraq · Afghan · Pak…", 1400);
+    logLine("info", "raw rows: Iraq=15400, Afghanistan=12970, Pakistan=6112, …");
+    logLine("warn", state.skillOn
+      ? "bez RENDER_CHART pravidla: jen tabulka v chatu, žádný dashboard"
+      : "bez skillu: žádný dashboard — jen tabulka v chatu");
+  }
+
+  if (state.evalsOn) {
+    await runTeacherGrading([
+      { key: "rowCount",     label: "row count", actual: "10",       expected: "10",       verdict: "pass" },
+      { key: "schemaMatch",  label: "schema",    actual: "ok",       expected: "ok",       verdict: "pass" },
+      { key: "noSilentFail", label: "no drop",   actual: "no drops", expected: "no drops", verdict: "pass" },
+    ], { headline: "perfekt!", finalVerdict: "pass" });
+  } else if (renderedChart) {
+    logLine("warn", "evals OFF — nikdo nezkontroloval, jestli to číslo je správné");
+  } else {
+    logLine("info", "evals OFF (čistá query — prošlo by stejně)");
+  }
+
+  await gotoStation("start");
+  state.running = false;
+}
+
+async function runScenarioB() {
+  // Composite: DROP TABLE TEROR2_OLD — both no_destructive AND no_old_tables fire.
+  beginRun();
+  await gotoStation("inbox");
+  await say("smaž tu starou", 1000);
+  logLine("info", "PROMPT: DROP TABLE TEROR2_OLD;");
+  await think("DROP TABLE — to je\ndestruktivní operace.\nzkontroluju checklist", 2400);
+
+  if (state.skillOn) {
+    const blocked = await walkSkillStation({
+      noDestructive: "block",
+      noOldTables:   "block",
+    });
+    if (blocked) {
+      await think("dvě pravidla padla:\nDROP zakázán + _OLD\ntabulky chráněné", 2400);
+      await say("STOP — 2 pravidla!", 1300);
+      logLine("ok", "blokováno před MCP — ušetřené tokeny + tabulka přežila");
+      await wait(700);
+      await gotoStation("start");
+      state.running = false; return;
+    }
+    logLine("warn", "obě destruktivní pravidla jsou OFF — průchod");
+    await wait(500);
+  } else {
+    await think("skill je OFF —\nnikdo to nechytne…", 1600);
+    logLine("warn", "skill je OFF — destruktivní SQL projde");
+  }
+
+  if (!state.mcpOn) {
+    await gotoStation("mcp");
+    await say("MCP off", 1100);
+    logLine("ok", "MCP server je OFF — tabulka přežila omylem");
+    state.running = false; return;
+  }
+
+  await gotoStation("mcp");
+  openMcp();
+  await useTool("execute_query");
+  await think("execute_query —\nposílám DROP", 1400);
+  closeMcp();
+  await gotoStation("db");
+  state.agent.facing = "left";
+  state.agent.activity = "tooling";
+  showDbTerminal("snowflake-czechitas · execute_query");
+  await typeDbSql([
+    "DROP TABLE",
+    "  COURSES.SCH_TEROR.TEROR2_OLD;",
+  ], 460);
+  await wait(700);
+  await streamDbRows([
+    { text: "⚠ TABLE DROPPED",          cls: "fail" },
+    { text: "TEROR2_OLD: 26 828 rows",  cls: "fail" },
+    { text: "→ irreversible",           cls: "fail" },
+  ], 420);
+  await wait(900);
+  state.agent.activity = "idle";
+  logLine("fail", "TEROR2_OLD DROPPED — guardrail bypassed");
+  if (state.evalsOn) {
+    await runTeacherGrading([
+      { key: "rowCount",     label: "row count", actual: "n/a",   expected: "26 828",   verdict: "skip" },
+      { key: "schemaMatch",  label: "schema",    actual: "n/a",   expected: "n/a",      verdict: "skip" },
+      { key: "noSilentFail", label: "no drop",   actual: "DROP",  expected: "no drops", verdict: "fail" },
+    ], { headline: "tabulka je pryč.\nevals už nepomůžou.", finalVerdict: "fail" });
+  } else {
+    logLine("fail", "evals OFF — DROP prošel a nikdo to nezkontroloval");
+  }
+
+  await gotoStation("start");
+  state.running = false;
+}
+
+async function runScenarioC() {
+  // JOIN COUNTRY_DIRTYDATA — query technically succeeds, but evals catch the dirty join
+  // (count=408 rows ≠ 204), unless skill rewrote it first.
+  const useClean = (state.skillOn && state.rules.preferCleanLookup);
+  beginRun();
+
+  await gotoStation("inbox");
+  await say("propoj země", 1000);
+  logLine("info", "PROMPT: JOIN teror × COUNTRY_DIRTYDATA");
+  await activity("reading", 800);
+
+  if (state.skillOn) {
+    await walkSkillStation({
+      preferCleanLookup: "rewrite",  // matches DIRTYDATA → swaps to COUNTRY (only fires when toggle is on)
+    });
+    if (!state.rules.preferCleanLookup) {
+      logLine("warn", "prefer COUNTRY je OFF — agent použije DIRTYDATA");
+    }
+    await wait(400);
+  } else {
+    logLine("warn", "skill je OFF — žádný preflight");
+  }
+
+  if (!state.mcpOn) {
+    await gotoStation("mcp");
+    await say("nemůžu sáhnout", 1100);
+    logLine("fail", "MCP server je OFF");
+    state.running = false; return;
+  }
+
+  await gotoStation("mcp");
+  openMcp();
+  await useTool("execute_query");
+  closeMcp();
+
+  await gotoStation("db");
+  state.agent.facing = "left";
+  state.agent.activity = "tooling";
+  const tbl = useClean ? "COUNTRY (204 řádků)" : "COUNTRY_DIRTYDATA (408 řádků)";
+  const joinTbl = useClean ? "COUNTRY" : "COUNTRY_DIRTYDATA";
+  showDbTerminal("snowflake-czechitas · execute_query");
+  await typeDbSql([
+    "SELECT t.COUNTRY_TXT, c.NAME",
+    "FROM COURSES.SCH_TEROR.TEROR t",
+    "JOIN COURSES.SCH_TEROR." + joinTbl + " c",
+    "  ON t.COUNTRY = c.ID;",
+  ], 420);
+  await think("propojuju TEROR\ns " + joinTbl, 1500);
+  if (useClean) {
+    await streamDbRows([
+      { text: "→ 204 rows · 1× / země",  cls: "ok" },
+      { text: "schema: COUNTRY (clean)", cls: "ok" },
+    ], 320);
+  } else {
+    await streamDbRows([
+      { text: "→ 408 rows · duplicates",         cls: "warn" },
+      { text: "schema: COUNTRY_DIRTYDATA",       cls: "warn" },
+      { text: "(očekáváno 204 — leak detected)", cls: "warn" },
+    ], 320);
+  }
+  logLine("info", "DB → joined " + tbl);
+  await wait(900);
+  state.agent.activity = "idle";
+
+  // Decide tone before drawing — dirty join + no eval rescue ⇒ silent fail
+  let chartTone = "ok";
+  if (!useClean && !state.evalsOn) chartTone = "fail";
+  else if (!useClean && state.evalsOn) chartTone = "warn";
+
+  let renderedChart = false;
+  if (state.skillOn && state.rules.renderChart) {
+    await gotoStation("board");
+    await drawChartBar(chartTone);
+    showFullDashboard(chartTone, useClean ? "clean" : "dirty", "C");
+    if (chartTone === "ok")   logLine("ok",   "DASHBOARD: ready");
+    if (chartTone === "warn") logLine("warn", "DASHBOARD: warning");
+    if (chartTone === "fail") logLine("fail", "DASHBOARD: silent bad numbers");
+    renderedChart = true;
+  } else {
+    await say("data hotová", 1200);
+    logLine("warn", state.skillOn
+      ? "bez RENDER_CHART pravidla: jen řádky v chatu, žádný dashboard"
+      : "bez skillu: jen řádky v chatu — žádný dashboard");
+  }
+
+  if (state.evalsOn) {
+    if (useClean) {
+      await runTeacherGrading([
+        { key: "rowCount",     label: "row count", actual: "204",      expected: "204",      verdict: "pass" },
+        { key: "schemaMatch",  label: "schema",    actual: "ok",       expected: "ok",       verdict: "pass" },
+        { key: "noSilentFail", label: "no drop",   actual: "no drops", expected: "no drops", verdict: "pass" },
+      ], { headline: "čistý JOIN. ✓", finalVerdict: "pass" });
+    } else {
+      await runTeacherGrading([
+        { key: "rowCount",     label: "row count", actual: "408",      expected: "204",      verdict: "fail" },
+        { key: "schemaMatch",  label: "schema",    actual: "ok",       expected: "ok",       verdict: "pass" },
+        { key: "noSilentFail", label: "no drop",   actual: "no drops", expected: "no drops", verdict: "pass" },
+      ], { headline: "408 ≠ 204 —\nDIRTYDATA prosákla!", finalVerdict: "fail" });
+    }
+  } else if (!useClean && renderedChart) {
+    logLine("fail", "evals OFF + DIRTYDATA → tichý fail v dashboardu");
+  }
+
+  await gotoStation("start");
+  state.running = false;
+}
+
+const SCENARIOS = { A: runScenarioA, B: runScenarioB, C: runScenarioC };
+
+/* ═══════════════════════════════════════════════════════════════════
+ * UI WIRING
+ * ═══════════════════════════════════════════════════════════════════ */
+
+function buildSkillBuilder() {
+  const wrap = document.getElementById("sb-rules");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  RULES.forEach(r => {
+    const row = document.createElement("label");
+    row.className = "sb-rule";
+    row.htmlFor = "sb-" + r.key;
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "sb-" + r.key;
+    cb.checked = state.rules[r.key];
+    cb.addEventListener("change", () => {
+      state.rules[r.key] = cb.checked;
+      row.classList.toggle("off", !cb.checked);
+      renderSkillPanel();
+      renderSkillBuilderPreview();
+    });
+    const text = document.createElement("div");
+    text.innerHTML =
+      `<div class="sb-rule-title">${escHtml(r.label)}</div>` +
+      `<div class="sb-rule-body">${escHtml(r.body)}</div>` +
+      `<span class="sb-rule-tag">${escHtml(r.tag)}</span>`;
+    row.appendChild(cb);
+    row.appendChild(text);
+    if (!cb.checked) row.classList.add("off");
+    wrap.appendChild(row);
+  });
+  renderSkillBuilderPreview();
+
+  const dl = document.getElementById("sb-download");
+  if (dl) dl.addEventListener("click", downloadSkillMd);
+  const cp = document.getElementById("sb-copy");
+  if (cp) cp.addEventListener("click", copySkillMd);
+}
+
+function generateSkillMarkdown() {
+  const active = RULES.filter(r => state.rules[r.key]);
+  const lines = [];
+  lines.push("---");
+  lines.push("name: sql-review");
+  lines.push('description: Pravidla, která agent kontroluje na každém SQL dotazu před spuštěním.');
+  lines.push("---");
+  lines.push("");
+  lines.push("# SQL Review");
+  lines.push("");
+  if (active.length === 0) {
+    lines.push("# (žádná pravidla — agent pošle SQL přímo na DB bez kontroly)");
+  } else {
+    lines.push("Před spuštěním každého dotazu:");
+    lines.push("");
+    for (const r of active) {
+      lines.push(`- **${r.tag}** — ${r.body}`);
+    }
+  }
+  lines.push("");
+  lines.push("# Schema: COURSES.SCH_TEROR");
+  lines.push("# - TEROR (84 341 řádků) ← hlavní");
+  lines.push("# - COUNTRY (204) ← použij tuhle");
+  lines.push("# - COUNTRY_DIRTYDATA (408) ← duplicity");
+  lines.push("# - TEROR2_OLD (26 828) ← deprecated");
+  return lines.join("\n");
+}
+
+function renderSkillBuilderPreview() {
+  const el = document.getElementById("sb-preview");
+  const cnt = document.getElementById("sb-preview-count");
+  if (!el) return;
+  const md = generateSkillMarkdown();
+  el.innerHTML = highlightSkillMd(md);
+  if (cnt) {
+    const n = RULES.filter(r => state.rules[r.key]).length;
+    let label;
+    if (n === 0) label = "0 pravidel aktivních (agent jede naslepo)";
+    else if (n === 1) label = "1 pravidlo aktivní";
+    else if (n < 5)   label = n + " pravidla aktivní";
+    else              label = n + " pravidel aktivních";
+    cnt.textContent = label;
+  }
+}
+
+function highlightSkillMd(md) {
+  const lines = md.split("\n");
+  return lines.map(line => {
+    const safe = escHtml(line);
+    if (/^---\s*$/.test(line)) return `<span class="com">${safe}</span>`;
+    if (/^#/.test(line))       return `<span class="h">${safe}</span>`;
+    if (/^- /.test(line)) {
+      return safe
+        .replace(/^- /, '<span class="bul">- </span>')
+        .replace(/\*\*([^*]+)\*\*/g, '<span class="key">$1</span>');
+    }
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*:/.test(line)) {
+      return safe.replace(/^([a-zA-Z_][a-zA-Z0-9_]*)(:)/, '<span class="key">$1</span>$2');
+    }
+    return safe;
+  }).join("\n");
+}
+
+/* CRC-32 (IEEE 802.3 polynomial) — used by ZIP per-file checksums. */
+const CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/* Minimal store-only ZIP writer. Files: [{name, data: Uint8Array}].
+ * Store-only (compression method 0) keeps the implementation under 60 lines —
+ * for a few KB of markdown the size penalty is negligible.
+ */
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const localParts = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const size = data.length;
+    // local file header (30 bytes + name + data)
+    const lfh = new Uint8Array(30 + nameBytes.length);
+    const dv = new DataView(lfh.buffer);
+    dv.setUint32(0, 0x04034b50, true);   // signature
+    dv.setUint16(4, 20, true);           // version needed
+    dv.setUint16(6, 0, true);            // flags
+    dv.setUint16(8, 0, true);            // method = store
+    dv.setUint16(10, 0, true);           // mtime
+    dv.setUint16(12, 0, true);           // mdate
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, size, true);        // compressed size
+    dv.setUint32(22, size, true);        // uncompressed size
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);           // extra
+    lfh.set(nameBytes, 30);
+    localParts.push(lfh, data);
+
+    // central directory record (46 bytes + name)
+    const cdr = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cdr.buffer);
+    cv.setUint32(0, 0x02014b50, true);   // signature
+    cv.setUint16(4, 20, true);           // version made by
+    cv.setUint16(6, 20, true);           // version needed
+    cv.setUint16(8, 0, true);            // flags
+    cv.setUint16(10, 0, true);           // method
+    cv.setUint16(12, 0, true);           // mtime
+    cv.setUint16(14, 0, true);           // mdate
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);           // extra len
+    cv.setUint16(32, 0, true);           // comment len
+    cv.setUint16(34, 0, true);           // disk #
+    cv.setUint16(36, 0, true);           // internal attrs
+    cv.setUint32(38, 0, true);           // external attrs
+    cv.setUint32(42, offset, true);      // local header offset
+    cdr.set(nameBytes, 46);
+    central.push(cdr);
+    offset += lfh.length + data.length;
+  }
+  const centralStart = offset;
+  let centralSize = 0;
+  for (const c of central) centralSize += c.length;
+  // end-of-central-directory record (22 bytes)
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralStart, true);
+  return new Blob([...localParts, ...central, eocd], { type: "application/zip" });
+}
+
+function downloadSkillMd() {
+  const md = generateSkillMarkdown();
+  const enc = new TextEncoder();
+  const readme = [
+    "# sql-review skill",
+    "",
+    "Tahle pravidla agent načte před každým SQL dotazem.",
+    "",
+    "## Instalace (Claude Code, GitHub Copilot v VS Code)",
+    "",
+    "Zkopíruj celou složku `sql-review/` do jednoho z těchto míst —",
+    "Copilot i Claude Code obě cesty čtou:",
+    "",
+    "- **Globálně** (funguje ve všech projektech): `~/.claude/skills/sql-review/`",
+    "- **Pro projekt**: `.claude/skills/sql-review/` v repu",
+    "",
+    "Pak ve VS Code otevři Copilot Chat a zeptej se třeba:",
+    "",
+    "> *Vyrob mi top 10 zemí podle počtu útoků jako graf.*",
+    "",
+    "Agent si pravidla z `SKILL.md` načte sám.",
+    "",
+    "## Co je uvnitř",
+    "",
+    "`sql-review/SKILL.md` — pět pravidel, která jste si zaškrtly v Czechitas Pixel Agent demu.",
+    "Každé pravidlo je jeden bullet — měň je, mažte, přidávejte vlastní.",
+    "",
+    "Vygenerováno z https://ishalkin.github.io/czechitas-pixel-agent/",
+  ].join("\n");
+  const blob = buildZip([
+    { name: "sql-review/SKILL.md", data: enc.encode(md) },
+    { name: "sql-review/README.md", data: enc.encode(readme) },
+  ]);
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sql-review-skill.zip";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function copySkillMd() {
+  const md = generateSkillMarkdown();
+  try {
+    await navigator.clipboard.writeText(md);
+    const tag = document.getElementById("sb-copied");
+    if (tag) {
+      tag.classList.add("show");
+      setTimeout(() => tag.classList.remove("show"), 1400);
+    }
+  } catch (e) {
+    console.warn("clipboard write failed:", e);
+  }
+}
+
+function attachUI() {
+  document.querySelectorAll(".scenarios button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".scenarios button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.scenario = btn.dataset.scenario;
+    });
+  });
+  document.getElementById("t-skill").addEventListener("change", e => {
+    state.skillOn = e.target.checked;
+    renderSkillPanel();
+  });
+  document.getElementById("t-mcp").addEventListener("change", e => {
+    state.mcpOn = e.target.checked;
+    renderMcpPanel();
+  });
+  document.getElementById("t-evals").addEventListener("change", e => {
+    state.evalsOn = e.target.checked;
+    renderEvalsPanel();
+  });
+  document.getElementById("btn-run").addEventListener("click", runCurrent);
+  document.getElementById("btn-reset").addEventListener("click", resetAll);
+}
+
+async function runCurrent() {
+  if (state.running) return;
+  state.running = true;
+  state.log = [];
+  renderLog();
+  const runBtn = document.getElementById("btn-run");
+  runBtn.disabled = true;
+  runBtn.textContent = "Running...";
+  try {
+    const fn = SCENARIOS[state.scenario];
+    if (fn) await fn();
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = "Run scenario";
+  }
+}
+
+function resetAll() {
+  state.running = false;
+  state.stepCursor = null;
+  state.bubble = null;
+  state.agent.x = STATIONS.start.x;
+  state.agent.y = STATIONS.start.y;
+  state.agent.activity = "idle";
+  state.agent.moving = false;
+  state.log = [{ kind: "info", text: "[idle] click \"Run scenario\" to start" }];
+  state.ruleStatus = {};
+  state.evalStatus = {};
+  state.toolStatus = {};
+  state.mcpOpen = false;
+  state.mcpTool = null;
+  state.chartBars = 0;
+  state.chartShown = false;
+  state.recipeCard = null;
+  state.toolbox = null;
+  state.dbScreen = null;
+  state.reportCard = null;
+  spawnTeacher();
+  hideFullDashboard();
+  hideDbTerminal();
+  renderLog();
+  renderSkillPanel();
+  renderMcpPanel();
+  renderEvalsPanel();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * BOOT
+ * ═══════════════════════════════════════════════════════════════════ */
+
+(async function init() {
+  buildSkillBuilder();
+  attachUI();
+  renderSkillPanel();
+  renderMcpPanel();
+  renderEvalsPanel();
+  spawnTeacher();
+  await loadAll();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

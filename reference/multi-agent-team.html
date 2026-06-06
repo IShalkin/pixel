@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Product Team, Reinvented &middot; Practice Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Grand Budapest: burgundy primary, burned-orange secondary, teal agent */
+    --cream:#f7ecdd; --paper:#fffdf9; --fg:#2e1c22; --accent:#8c2f39; --accent-d:#6d2029;
+    --burnt:#c9682e; --burnt-d:#a8501f;
+    --muted:#9a7d80; --border:#ead7c4; --line-soft:#f3e6d6;
+    --agent:#1f8a7e; --agent-bright:#39c6b6;
+    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Archivo",-apple-system,"Segoe UI",system-ui,sans-serif;
+    --ok:#3f8a5c; --warn:#c0892b; --fail:#b5424f;
+    --shadow:0 1px 2px rgba(96,40,30,.05),0 8px 24px rgba(96,40,30,.08);
+    --shadow-lg:0 2px 4px rgba(96,40,30,.06),0 18px 48px rgba(96,40,30,.13);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;color:var(--fg);font-family:var(--sans)}
+  body{min-height:100vh;padding:34px 20px 28px;
+    background:
+      radial-gradient(1200px 520px at 78% -8%, rgba(140,47,57,.10), transparent 60%),
+      radial-gradient(900px 440px at -6% 4%, rgba(57,214,194,.07), transparent 55%),
+      var(--cream);}
+  .wrap{max-width:1320px;margin:0 auto}
+
+  .masthead{margin:0 0 20px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+    font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-d);
+    background:var(--line-soft);border:1px solid var(--border);border-radius:99px;padding:5px 13px;margin-bottom:16px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:99px;background:var(--accent);
+    box-shadow:0 0 0 3px rgba(140,47,57,.18)}
+  h1{font-family:var(--serif);font-weight:400;font-size:clamp(32px,4.4vw,54px);line-height:1.04;
+    margin:0 0 14px;letter-spacing:-.01em;color:var(--fg)}
+  h1 i{font-style:italic;color:var(--accent-d);line-height:1.1}
+  .sub{color:#544c61;font-size:16px;margin:0;max-width:80ch;line-height:1.62}
+  .sub b{color:var(--fg);font-weight:600}
+  .sub .agc{color:var(--agent);font-weight:600}
+
+  .viewswitch{display:inline-flex;gap:3px;background:var(--line-soft);border:1px solid var(--border);
+    border-radius:11px;padding:4px;margin-bottom:14px}
+  .viewswitch button{background:transparent;border:none;cursor:pointer;font-family:var(--mono);
+    font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--accent-d);padding:8px 16px;border-radius:8px;
+    display:flex;align-items:center;gap:8px;transition:.18s}
+  .viewswitch button .vs-sub{font-family:var(--sans);font-weight:500;font-size:11px;color:var(--muted)}
+  .viewswitch button.on{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(140,47,57,.3)}
+  .viewswitch button.on .vs-sub{color:rgba(255,255,255,.82)}
+  .viewswitch button:not(.on):hover{background:var(--paper)}
+
+  .stage-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* Grand Budapest proscenium: a pastel frame around the stage */
+  .stagebox{background:linear-gradient(#e8c9a8,#dcb594);border:1px solid #ca9f7e;border-radius:14px;
+    padding:13px;position:relative;box-shadow:var(--shadow-lg)}
+  .stagebox::before{content:"";position:absolute;inset:6px;border:1px solid rgba(255,255,255,.45);
+    border-radius:10px;pointer-events:none}
+  canvas#stage{display:block;image-rendering:pixelated;image-rendering:crisp-edges;width:100%;height:auto;
+    background:#f4e7d6;border-radius:8px}
+  .phasebar{display:flex;gap:5px;margin-top:11px}
+  .phasebar .ph{flex:1 1 0;min-width:0;text-align:center;font-size:9.5px;font-family:var(--mono);font-weight:600;
+    letter-spacing:.02em;padding:7px 2px;border-radius:7px;background:rgba(255,255,255,.5);
+    border:1px solid rgba(168,140,152,.4);color:#8a6a7a;transition:.25s}
+  .phasebar .ph.on{background:var(--accent);color:#fff;border-color:var(--accent);
+    box-shadow:0 4px 14px rgba(140,47,57,.4)}
+  .phasebar .ph.done{background:rgba(63,138,92,.18);color:#2f6a44;border-color:rgba(63,138,92,.4)}
+
+  .caption{background:var(--paper);border:1px solid var(--border);border-radius:12px;
+    padding:15px 18px;min-height:78px;box-shadow:var(--shadow);border-left:3px solid var(--accent)}
+  .cap-step{display:flex;gap:10px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+  .cap-phase{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+    background:var(--accent);color:#fff;padding:3px 11px;border-radius:99px}
+  .cap-stn{font-family:var(--mono);font-size:12px;color:var(--accent-d);font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em}
+  .cap-text{font-size:15px;line-height:1.55;color:#3d3548}
+  .cap-text b{color:var(--accent-d);font-weight:600}
+  .cap-text .agc{color:var(--agent);font-weight:600}
+
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .controls button{background:var(--accent);color:#fff;border:none;padding:11px 22px;border-radius:9px;
+    cursor:pointer;font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:.01em;
+    box-shadow:0 4px 14px rgba(140,47,57,.28);transition:transform .12s,box-shadow .2s}
+  .controls button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(140,47,57,.34)}
+  .controls button:active:not(:disabled){transform:translateY(0) scale(.985)}
+  .controls button.ghost{background:transparent;color:var(--accent-d);border:1px solid var(--border);box-shadow:none}
+  .controls button.ghost:hover:not(:disabled){background:var(--line-soft);transform:none}
+  .controls button:disabled{opacity:.4;cursor:default}
+  .controls button#play{font-weight:700}
+  .controls .beatn{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .controls .speed{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;
+    font-family:var(--mono)}
+  .controls .speed button{padding:6px 12px;font-size:12.5px}
+  .alyr{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:var(--agent);
+    cursor:pointer;border:1px solid rgba(15,157,143,.4);background:rgba(57,214,194,.08);border-radius:8px;padding:7px 12px}
+  .alyr input{accent-color:var(--agent)}
+
+  .feed{background:var(--paper);border:1px solid var(--border);padding:13px 15px;border-radius:12px;height:158px;
+    overflow-y:auto;line-height:1.5;box-shadow:var(--shadow)}
+  .feed .msg{display:flex;gap:9px;padding:5px 0;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .feed .av{width:12px;height:12px;border-radius:99px;flex:none;margin-top:3px;border:1px solid rgba(74,51,64,.3)}
+  .feed .av.agent{border-radius:2px;transform:rotate(45deg);background:var(--agent)!important}
+  .feed .bd{font-size:13.5px;color:#4a3340}
+  .feed .who{font-weight:700;color:#2c1f28;margin-right:6px}
+  .feed .sys{color:#9a6a08;font-size:12.5px;font-style:italic;padding:5px 0}
+
+  .layer-label{display:flex;align-items:center;gap:14px;margin:34px 0 16px}
+  .layer-label .n{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;
+    background:var(--fg);color:#fff;border-radius:99px;padding:5px 12px;text-transform:uppercase}
+  .layer-label h2{font-family:var(--serif);font-weight:400;font-size:28px;margin:0;letter-spacing:-.01em}
+  .layer-label .hint{color:var(--muted);font-size:13.5px;margin-left:auto;text-align:right;max-width:44ch;line-height:1.4}
+
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:stretch}
+  @media(max-width:980px){.panels{grid-template-columns:1fr}}
+  .pane{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+  .pane-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 18px;border-bottom:1px solid var(--border);background:var(--line-soft)}
+  .pane-head h3{margin:0;font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:-.01em}
+  .pane-head .tag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.08em;color:var(--muted);
+    text-transform:uppercase}
+
+  /* warm "ledger" instead of a black console */
+  .term{background:#fbf3e6;color:#5a4350;font-family:var(--mono);font-size:13px;line-height:1.7;
+    padding:16px 18px;flex:1;overflow-y:auto;min-height:420px;max-height:500px;
+    background-image:repeating-linear-gradient(transparent 0 21px,rgba(168,140,152,.12) 21px 22px)}
+  .term .ln{display:block;white-space:pre-wrap;word-break:break-word;padding:1.5px 0;animation:fadein .2s ease}
+  .term .prompt{color:#a98c98}
+  .term .arrow{color:var(--accent-d)}
+  .term .ok{color:#2f7a4c}
+  .term .dim{color:#9a8090}
+  .term .be{color:var(--accent-d);font-weight:600}
+  .term .bm{color:#0c7d72;font-weight:600}
+  .term .cur{display:inline-block;width:8px;height:15px;background:#2f7a4c;vertical-align:-2px;
+    animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .backend-key{display:flex;gap:14px;align-items:center;font-size:11px;font-family:var(--mono);font-weight:500;color:var(--muted)}
+  .backend-key b{font-weight:700}.backend-key .ka{color:var(--accent-d)}.backend-key .km{color:#0f9d8f}
+
+  .results{padding:18px;flex:1;display:flex;flex-direction:column;gap:18px}
+  .res-block{border:1px solid var(--border);border-radius:11px;background:var(--paper);overflow:hidden;
+    transition:box-shadow .3s,border-color .3s,transform .3s}
+  .res-block.lit{border-color:var(--accent);box-shadow:0 0 0 3px rgba(140,47,57,.16),var(--shadow);transform:translateY(-1px)}
+  .res-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;
+    border-bottom:1px solid var(--border);background:var(--line-soft)}
+  .res-cap .t{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--accent-d)}
+  .res-cap .s{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .bands{display:flex;gap:8px;padding:12px 14px}
+  .bands .band{flex:1;text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    background:var(--line-soft);border:1px solid var(--border);border-radius:8px;padding:8px 4px;line-height:1.4}
+  .bands .band b{display:block;color:var(--accent-d);font-size:15px;margin:2px 0}
+
+  .empty{padding:16px 14px;font-family:var(--mono);font-size:12px;color:var(--muted);font-style:italic}
+  .skillcard{padding:14px}
+  .skillcard .fname{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--agent);display:flex;
+    align-items:center;gap:8px;margin-bottom:8px}
+  .skillcard .fname::before{content:"";width:9px;height:9px;background:var(--agent-bright);
+    transform:rotate(45deg);display:inline-block}
+  .skillcard pre{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:#5a5470;
+    background:#faf6ff;border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;white-space:pre-wrap}
+  .skillcard .badge{margin-top:10px;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);
+    font-size:11.5px;font-weight:600;color:#fff;background:var(--agent);padding:5px 12px;border-radius:99px;
+    opacity:0;transition:opacity .4s}
+  .skillcard .badge.on{opacity:1}
+  .deck-frame{position:relative;height:176px;background:#f3e8d8;border-top:1px solid var(--border)}
+  .deck-frame canvas{width:100%;height:100%;display:block}
+
+  .credit{font-size:12px;color:var(--muted);margin-top:30px;padding-top:18px;border-top:1px solid var(--border);
+    text-align:center;line-height:1.6;max-width:90ch;margin-left:auto;margin-right:auto}
+  .credit a{color:var(--accent-d)}
+  .signoff{text-align:center;font-family:var(--serif);font-size:18px;color:var(--accent-d);
+    margin:18px 0 4px}
+  .signoff .tag-reinventor{display:inline-block;font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;
+    background:#a100ff;border-radius:99px;padding:3px 12px;letter-spacing:.02em;text-decoration:none;
+    box-shadow:0 3px 10px rgba(161,0,255,.32);transition:transform .12s ease,box-shadow .12s ease}
+  .signoff .tag-reinventor:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(161,0,255,.45)}
+  .mech{font-size:12px;color:var(--muted);padding:8px 11px;border:1px solid var(--border);border-radius:8px;
+    opacity:.45;transition:.3s}
+  .mech b{color:var(--fg)}.mech.on{opacity:1;border-color:var(--accent);background:var(--line-soft)}.mech.on b{color:var(--accent-d)}
+  .mechrail{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+  @media(max-width:760px){.mechrail{grid-template-columns:1fr 1fr}}
+
+  /* interactive skill builder (play with it, like czechitas) */
+  .builder{margin:30px 0 0;background:var(--paper);border:1px solid var(--border);border-radius:14px;
+    padding:20px 22px;box-shadow:var(--shadow-lg)}
+  .builder .bh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .builder .bh h2{font-family:var(--serif);font-weight:400;font-size:24px;margin:0;letter-spacing:-.01em}
+  .builder .bh .try{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:#fff;background:var(--agent);border-radius:99px;padding:3px 11px}
+  .builder .bsub{color:#544c61;font-size:14px;margin:6px 0 16px;max-width:84ch;line-height:1.55}
+  .builder .bsub b{color:var(--accent-d)}
+  .builder .bcols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media(max-width:860px){.builder .bcols{grid-template-columns:1fr}}
+  .brules{display:flex;flex-direction:column;gap:8px}
+  .brule{display:grid;grid-template-columns:34px 1fr;gap:11px;align-items:start;cursor:pointer;
+    padding:11px 13px;background:var(--cream);border:1px solid var(--border);border-radius:10px;transition:.15s}
+  .brule:hover{border-color:var(--accent)}
+  .brule.off{opacity:.5;background:#f3eef9}
+  .brule .sw{margin-top:2px;width:34px;height:20px;border-radius:99px;background:#cdbfe6;position:relative;
+    transition:.18s;flex:none}
+  .brule .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:99px;
+    background:#fff;box-shadow:0 1px 3px rgba(58,30,96,.3);transition:.18s}
+  .brule.on .sw{background:var(--accent)}
+  .brule.on .sw::after{left:16px}
+  .brule .rt{font-size:13.5px;font-weight:600;color:var(--fg)}
+  .brule .rb{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .brule .ctxtag{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:10px;font-weight:600;
+    letter-spacing:.04em;color:var(--agent);background:rgba(57,214,194,.12);border:1px solid rgba(15,157,143,.35);
+    border-radius:5px;padding:1px 7px}
+  /* custom-skill form */
+  .bsep{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--muted);
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .bsep::before,.bsep::after{content:"";flex:1;height:1px;background:var(--border)}
+  .bform{display:flex;flex-direction:column;gap:11px}
+  .bfield label{display:block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent-d);
+    margin-bottom:4px;letter-spacing:.02em}
+  .bfield input,.bfield textarea{width:100%;background:var(--cream);border:1px solid var(--border);border-radius:8px;
+    padding:9px 11px;font-family:var(--mono);font-size:12px;color:var(--fg);line-height:1.5;resize:vertical}
+  .bfield input:focus,.bfield textarea:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(140,47,57,.14)}
+  .bfield textarea{min-height:62px}
+  .bfield input::placeholder,.bfield textarea::placeholder{color:#a99fc0;font-style:italic}
+  .bprev{background:#fbf3e6;border:1px solid var(--border);border-radius:11px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:var(--shadow);position:sticky;top:16px;max-height:calc(100vh - 32px)}
+  /* on a single-column layout the preview stops being sticky (it sits under the form) */
+  @media(max-width:860px){.bprev{position:static;max-height:none}}
+  .bprev .pvh{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;background:var(--line-soft);
+    border-bottom:1px solid var(--border)}
+  .bprev .pvh .fn{font-family:var(--mono);font-size:12px;color:var(--agent);font-weight:600}
+  .bprev .pvh .cnt{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .bprev pre{margin:0;padding:14px 15px;font-family:var(--mono);font-size:12px;line-height:1.65;
+    white-space:pre-wrap;word-break:break-word;color:#5a4350;flex:1;min-height:210px;max-height:300px;overflow-y:auto}
+  .bprev .k{color:#0c7d72}.bprev .h{color:#9a6a08;font-weight:600}.bprev .b{color:var(--accent-d)}
+  .bprev .c{color:#a98c98}.bprev .ctx{color:#2f7a4c}
+  .bprev .pva{display:flex;gap:9px;align-items:center;padding:9px 13px;background:var(--line-soft);border-top:1px solid var(--border)}
+  .bprev .pva button{background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:7px;
+    cursor:pointer;font-family:var(--sans);font-size:12.5px;font-weight:600}
+  .bprev .pva button.ghost{background:transparent;color:var(--accent-d);border:1px solid var(--border)}
+  .bprev .pva .done{font-family:var(--mono);font-size:11px;color:#2f7a4c;opacity:0;transition:.2s}
+  .bprev .pva .done.show{opacity:1}
+  .bprev .install{margin:0;padding:10px 13px;background:#f3e8d8;border-top:1px solid var(--border);
+    font-family:var(--mono);font-size:10.5px;color:#8a6a7a;line-height:1.5}
+  .bprev .install code{color:#9a6a08}
+
+  .payoff{margin-top:24px;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
+  .payoff h2{font-family:var(--serif);font-weight:400;font-size:26px;margin:0 0 14px}
+  table.po{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13.5px}
+  table.po th{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-d);
+    background:var(--line-soft);text-align:left;padding:8px 16px}
+  table.po td{padding:9px 16px;border-bottom:1px solid var(--border)}
+  table.po td.was{color:var(--muted)}table.po td.now b{color:var(--accent-d)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <span class="eyebrow"><span class="dot"></span>Practice Engine &middot; PM Simulator</span>
+    <h1>A product team,<br><i>reinvented</i> by agents.</h1>
+    <p class="sub">One PM, two supervisors, six people. <b>The people stay human.</b> Each one works with <span class="agc">their own agent</span>: they ask in plain words, the agent looks things up in Jira and Confluence and answers back. Skills get shared through a repo, and the PM's dashboard fills itself, so the team stays in step without the status chasing.</p>
+  </header>
+
+  <div class="mechrail" id="mechRail">
+    <div class="mech" data-m="agents"><b>Own agent each</b><br>ask in plain words, get answers</div>
+    <div class="mech" data-m="context"><b>Shared context</b><br>Jira, Confluence, transcripts</div>
+    <div class="mech" data-m="skill"><b>Shared skills</b><br>commit once, pull when needed</div>
+    <div class="mech" data-m="gap"><b>Gap closes</b><br>juniors ship senior-grade work</div>
+  </div>
+
+  <div class="stage-col">
+    <div class="viewswitch" id="viewSwitch">
+      <button data-view="team" class="on">Team view<span class="vs-sub">the whole day</span></button>
+      <button data-view="closeup">Agent close-up<span class="vs-sub">inside one agent</span></button>
+    </div>
+    <div class="stagebox">
+      <canvas id="stage" width="920" height="410"></canvas>
+      <div class="phasebar" id="phasebar"></div>
+    </div>
+    <div class="caption" id="caption">
+      <div class="cap-step"><span class="cap-phase" id="capPhase">READY</span><span class="cap-stn" id="capStn">click Next to step through</span></div>
+      <div class="cap-text" id="capText">Left: a real team, a PM with two supervisors and their people. Right: the systems they share, Jira, Confluence, a skills repo, and the PM dashboard. Step through one beat at a time, or press Play all.</div>
+    </div>
+    <div class="controls">
+      <button id="play">&#9654; Play all</button>
+      <button id="next" class="ghost">Next &#9654;</button>
+      <button id="reset" class="ghost">Reset</button>
+      <span class="beatn" id="beatn">beat 0 / 8</span>
+      <label class="alyr"><input type="checkbox" id="agentToggle" checked> show agent layer</label>
+      <span class="speed">speed
+        <button data-sp="0.65" class="ghost">0.5&times;</button>
+        <button data-sp="1" class="ghost">1&times;</button>
+        <button data-sp="1.7" class="ghost">2&times;</button>
+      </span>
+    </div>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div class="layer-label">
+    <span class="n">Under the hood</span>
+    <h2>The real implementation</h2>
+    <span class="hint">Left: the agent and MCP calls behind the day. Right: what they produce, shared context and a skill committed to a repo, then pulled when needed.</span>
+  </div>
+
+  <div class="panels">
+    <div class="pane">
+      <div class="pane-head">
+        <h3>Technical trace</h3>
+        <div class="backend-key">
+          <span class="ka"><b>&#9632;</b> Agent / Skill</span>
+          <span class="km"><b>&#9632;</b> MCP</span>
+        </div>
+      </div>
+      <div class="term" id="term"><span class="ln dim">team idle, press Next to begin<span class="cur" id="cursor"></span></span></div>
+    </div>
+
+    <div class="pane" id="resultsPane">
+      <div class="pane-head"><h3>Results</h3><span class="tag">live &middot; offline</span></div>
+      <div class="results">
+        <div class="res-block" id="resCtx">
+          <div class="res-cap"><span class="t">shared context</span><span class="s">jira &middot; confluence &middot; transcript</span></div>
+          <div class="empty" id="ctxEmpty">empty before the run &middot; press Next, the team's agents fill it as they work</div>
+          <div class="bands" id="ctxBands" style="display:none">
+            <div class="band">tickets<b id="ctxTickets">0</b>linked and assigned</div>
+            <div class="band">pages<b id="ctxPages">0</b>read by all agents</div>
+            <div class="band">transcript<b id="ctxTr">0</b>turned to tickets</div>
+          </div>
+        </div>
+        <div class="res-block" id="resSkill">
+          <div class="res-cap"><span class="t">pptx-skill.md</span><span class="s">commit &middot; pull on demand</span></div>
+          <div class="skillcard">
+            <div class="fname" id="skillName">pptx-skill.md</div>
+            <pre id="skillBody"># Branded deck skill
+- Use the team template and colours
+- Title, agenda, one idea per slide
+- Pull live figures from Jira
+- Quote the spec from Confluence
+- Turn the recorded meeting into notes</pre>
+            <span class="badge" id="skillBadge">committed to repo, anyone can pull it</span>
+          </div>
+          <div class="deck-frame"><canvas id="deck" width="520" height="176"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="builder">
+    <div class="bh">
+      <h2>Build the skill yourself</h2>
+      <span class="try">try it</span>
+    </div>
+    <p class="bsub">A <b>skill</b> is a short, plain-text instruction the agent reads before it works. Start from the ready-made rules below, then <b>write your own</b> in the fields underneath. The file on the right rewrites itself live. Download it, drop it in your skills folder, and your agent follows it every time.</p>
+    <div class="bcols">
+      <div>
+        <div class="brules" id="brules"></div>
+        <div class="bsep">or write your own</div>
+        <div class="bform">
+          <div class="bfield"><label>skill name (kebab-case)</label>
+            <input id="fName" type="text" placeholder="e.g. weekly-status-deck"></div>
+          <div class="bfield"><label>description (what it is for)</label>
+            <input id="fDesc" type="text" placeholder="e.g. Build the weekly status deck for the leadership review"></div>
+          <div class="bfield"><label>steps (one per line, atomic actions)</label>
+            <textarea id="fSteps" placeholder="e.g.&#10;Pull this sprint's tickets from Jira&#10;Read the latest spec in Confluence&#10;Group the work by owner&#10;Render one slide per theme"></textarea></div>
+          <div class="bfield"><label>tools to use</label>
+            <input id="fTools" type="text" placeholder="e.g. jira.search, confluence.get_page, pptx export"></div>
+          <div class="bfield"><label>visual style</label>
+            <input id="fViz" type="text" placeholder="e.g. team brand colours, one chart per slide, no clip-art"></div>
+          <div class="bfield"><label>writing style</label>
+            <input id="fTone" type="text" placeholder="e.g. plain language, short bullets, no jargon"></div>
+        </div>
+      </div>
+      <div class="bprev">
+        <div class="pvh"><span class="fn" id="bFileName">kebab-skill.md</span><span class="cnt" id="bCount">0 rules on</span></div>
+        <pre id="bPreview"></pre>
+        <div class="pva">
+          <button id="bCopy">Copy</button>
+          <button id="bDownload" class="ghost">Download .md</button>
+          <span class="done" id="bDone">copied</span>
+        </div>
+        <p class="install">Save it as <code id="bInstall">~/.claude/skills/kebab-skill/SKILL.md</code>. Claude Code and Copilot both read that folder. Then just ask your agent for the thing, and it follows these rules.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="payoff" id="payoff" style="display:none">
+    <h2>The gap between junior and PM is erased. The org got reinvented.</h2>
+    <table class="po">
+      <thead><tr><th>Before</th><th>Now</th></tr></thead>
+      <tbody id="payoffBody"></tbody>
+    </table>
+  </div>
+
+  <p class="credit">A Product Team, Reinvented &middot; Practice Engine two-layer simulation. The office shows real people, each paired with their own agent; the trace and results show the agent and MCP calls and the shared skill behind the day. In the spirit of <a href="https://github.com/IShalkin/czechitas-pixel-agent">czechitas-pixel-agent</a>.</p>
+  <p class="signoff"><a class="tag-reinventor" href="https://linkedin.com/in/ilia-shalkin" target="_blank" rel="noopener">#reinventor</a></p>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+ * LEFT: the team (PM, 2 supervisors, 6 people), each with a distinct
+ * glowing agent orb. People ask in plain words (purple bubble); their
+ * agent answers back (cyan bubble) and acts. RIGHT: a systems wall,
+ * Jira board, Confluence page, a Skills repo, and a live PM dashboard.
+ * Eight beats, click-to-advance, with a camera that focuses each beat.
+ * ════════════════════════════════════════════════════════════════ */
+const C=document.getElementById("stage");
+const DPR=2,W=C.width,H=C.height;
+C.width=W*DPR;C.height=H*DPR;
+const x=C.getContext("2d");
+x.imageSmoothingEnabled=false;x.scale(DPR,DPR);
+
+/* Grand Budapest pastel stage + Dogville chalk-outline buildings.
+ * Light warm floor, sage upper band, buildings are light pastel fills with
+ * thin "ink" outlines and boxed serif labels. Burgundy primary + burned-orange
+ * secondary + teal agent (the Wes Anderson triad). */
+const P={cream:"#f4e7d6",ink:"#3a2630",accent:"#8c2f39",accentD:"#6d2029",
+  burnt:"#c9682e",burntD:"#a8501f",
+  agent:"#1f8a7e",agentBubble:"#176b61",agentBright:"#39c6b6",agentCore:"#0d3631",
+  skin:"#e8b894",paper:"#fbf2e6",ok:"#3f8a5c",warn:"#c0892b",fail:"#b5424f",
+  wall:"#c7d0c6",wall2:"#b0bcae",floor:"#f4e7d6",panel:"#fbf2e6",panelHi:"#f6e2cf",
+  ink2:"#8a6a70",line:"#d8b48f",roof:"#c97f54"};
+
+/* ── team (left region, x 0..500) ── */
+/* each person's agent runs on a different provider; the mark sits under the
+ * cat's tail. PM stays on Claude (the asterisk). */
+const PM={x:250,y:64,col:"#8c2f39",col2:"#6d2029",name:"PM",big:true,prov:"claude"};
+const SUPS={
+  a:{x:150,y:182,col:"#3074a0",col2:"#235273",name:"Sup Build",prov:"openai"},
+  b:{x:360,y:182,col:"#2f9a72",col2:"#216b50",name:"Sup Ship",prov:"gemini"},
+};
+const EMP={
+  a1:{x:58, y:322,col:"#3074a0",col2:"#235273",name:"Dev",     sup:"a", prov:"copilot"},
+  a2:{x:152,y:322,col:"#3074a0",col2:"#235273",name:"Junior",  sup:"a", junior:true, prov:"xai"},
+  a3:{x:246,y:322,col:"#3074a0",col2:"#235273",name:"QA",      sup:"a", prov:"claude"},
+  b1:{x:316,y:322,col:"#2f9a72",col2:"#216b50",name:"Designer",sup:"b", designer:true, prov:"openai"},
+  b2:{x:402,y:322,col:"#2f9a72",col2:"#216b50",name:"Data",    sup:"b", prov:"gemini"},
+  b3:{x:470,y:322,col:"#2f9a72",col2:"#216b50",name:"Writer",  sup:"b", prov:"copilot"},
+};
+function allPeople(){return [PM,SUPS.a,SUPS.b,EMP.a1,EMP.a2,EMP.a3,EMP.b1,EMP.b2,EMP.b3];}
+function personByKey(k){return k==="pm"?PM:(SUPS[k]||EMP[k]||null);}
+
+/* ── systems wall (right region, x 512..908) ── */
+const JIRA  ={x:512,y:36, w:396,h:88, title:"JIRA  board"};
+const CONF  ={x:512,y:132,w:396,h:66, title:"CONFLUENCE  space"};
+const SKILLS={x:512,y:206,w:396,h:46, title:"SKILLS  repo"};
+const DASH  ={x:512,y:260,w:396,h:142,title:"PM dashboard  live"};
+function panelCenter(p){return {x:p.x+p.w/2,y:p.y+p.h/2};}
+
+const PHASES=["BEFORE","AGENTS","ASK","BUILD","CONTEXT","SHARE","USE","MONITOR","REINVENTED"];
+
+const ROWS=[
+  {key:"a1",who:"Dev"},{key:"a2",who:"Junior"},{key:"a3",who:"QA"},
+  {key:"b1",who:"Designer"},{key:"b2",who:"Data"},{key:"b3",who:"Writer"},
+];
+
+const state={
+  speed:1,t:0,running:false,paused:false,abort:0,showAgents:true,
+  view:"team",cu:null,
+  tokens:[],bubbles:{},agentBubbles:{},busy:null,
+  focus:{x:W/2,y:H/2,z:1},cam:{x:W/2,y:H/2,z:1,tx:W/2,ty:H/2,tz:1},
+  phaseState:{},
+  wk:{
+    agents:0,
+    jira:{todo:0,prog:0,done:0,linked:0},
+    conf:{lines:0,readers:0},
+    repo:{committed:0,pulled:0},
+    transcript:0,
+    skill:{written:0,deck:0},
+    dash:{on:0, prog:{a1:0,a2:0,a3:0,b1:0,b2:0,b3:0},
+          st:{a1:"todo",a2:"block",a3:"todo",b1:"todo",b2:"todo",b3:"todo"}},
+    gap:1,
+    field:0,   // 0..1 glow of the shared-context field (Jira+Confluence as one pool)
+  },
+};
+
+function px(c,X,Y,w,h){x.fillStyle=c;x.fillRect(Math.round(X),Math.round(Y),w,h);}
+function clamp(v){return Math.max(0,Math.min(1,v));}
+
+/* ── background: a pastel proscenium stage, Dogville chalk underfoot ── */
+function drawWindow(wx,wy,ww,wh){
+  // arched pastel window, Grand Budapest symmetry
+  px("#b6c3bd",wx-3,wy-3,ww+6,wh+6);
+  const sky=["#f4d7b0","#f2c9a0","#eebf98","#e9b48f"];for(let i=0;i<4;i++)px(sky[i],wx,wy+i*(wh/4),ww,wh/4+1);
+  px("#fbf2e6",wx+ww-14,wy+4,7,7);px("#a98c98",wx+ww/2-1,wy,2,wh);}
+function drawPlant(pxp,base){px("#9a7748",pxp,base-8,11,8);px("#7d5e34",pxp,base-8,11,2);
+  x.fillStyle="#7aa86a";[[1,-15],[-3,-11],[7,-12],[3,-19],[9,-9]].forEach(([dx,dy])=>{
+    x.beginPath();x.ellipse(pxp+5+dx,base+dy,3,6,dx*0.12,0,Math.PI*2);x.fill();});}
+/* faint chalk grid on the stage floor (Dogville) */
+function drawChalkFloor(x0,y0,w,h){
+  x.save();x.globalAlpha=0.5;x.strokeStyle="rgba(255,255,255,0.5)";x.lineWidth=1;
+  x.setLineDash([3,5]);
+  for(let gx=x0+40;gx<x0+w;gx+=46){x.beginPath();x.moveTo(gx,y0);x.lineTo(gx,y0+h);x.stroke();}
+  for(let gy=y0+38;gy<y0+h;gy+=44){x.beginPath();x.moveTo(x0,gy);x.lineTo(x0+w,gy);x.stroke();}
+  x.setLineDash([]);x.restore();
+}
+function drawBackground(){
+  const WALL=30;
+  x.fillStyle=P.wall;x.fillRect(0,0,W,WALL);      // sage upper band
+  x.fillStyle=P.floor;x.fillRect(0,WALL,W,H-WALL); // warm pastel stage
+  x.fillStyle=P.wall2;x.fillRect(0,WALL-2,W,3);
+  drawChalkFloor(0,WALL,W,H-WALL);
+  drawWindow(120,8,80,18);drawWindow(330,8,80,18);
+  // chalk divider between the team and the systems
+  x.strokeStyle="rgba(168,140,152,0.5)";x.lineWidth=1;x.setLineDash([4,4]);
+  x.beginPath();x.moveTo(500,WALL+6);x.lineTo(500,H-10);x.stroke();x.setLineDash([]);
+  x.font='700 8px "IBM Plex Mono",monospace';x.fillStyle="#8a6a7a";x.textAlign="left";
+  x.fillText("THE TEAM",14,WALL+18);x.fillText("THE SYSTEMS THEY SHARE",514,WALL+18);x.textAlign="start";
+  drawPlant(470,H-12);
+}
+
+/* ── pixel icons (on the pastel roof bar, light glyphs) ── */
+function iconKanban(ix,iy){px("#fbf2e6",ix,iy,3,9);px("#fbf2e6",ix+4,iy,3,6);px("#fbf2e6",ix+8,iy,3,9);}
+function iconPage(ix,iy){px("#fbf2e6",ix,iy,8,10);px("#7aa86a",ix+1,iy+2,6,1);px("#d7b27a",ix+1,iy+4,6,1);px("#d7b27a",ix+1,iy+6,4,1);}
+function iconBars(ix,iy){px("#fbf2e6",ix,iy+5,2,4);px("#fbf2e6",ix+3,iy+2,2,7);px("#fbf2e6",ix+6,iy,2,9);}
+function iconRepo(ix,iy){x.strokeStyle="#fbf2e6";x.lineWidth=1;x.strokeRect(ix+.5,iy+.5,9,8);px("#fbf2e6",ix,iy,10,2);px("#fbf2e6",ix+3,iy+4,4,1);}
+
+/* a chalk-outline building: pale pastel fill, thin plum ink outline, a
+ * coloured "roof" header bar with the hand-lettered name. Lit = brand purple. */
+function panelFrame(p,lit,icon){
+  // soft cast shadow on the stage floor
+  px("rgba(120,90,110,0.10)",p.x+2,p.y+3,p.w,p.h);
+  px(lit?P.panelHi:P.panel,p.x,p.y,p.w,p.h);
+  x.strokeStyle=lit?P.accent:P.line;x.lineWidth=1.4;
+  x.strokeRect(p.x+.7,p.y+.7,p.w-1.4,p.h-1.4);
+  // roof bar
+  px(lit?P.accent:P.roof,p.x,p.y,p.w,16);
+  // a thin chalk eave line under the roof
+  px("rgba(255,255,255,0.45)",p.x,p.y+16,p.w,1);
+  if(icon)icon(p.x+6,p.y+3);
+  x.font='700 9px "IBM Plex Mono",monospace';x.fillStyle="#fff";x.textAlign="left";x.textBaseline="middle";
+  x.fillText(p.title,p.x+20,p.y+8);x.textAlign="start";x.textBaseline="alphabetic";
+}
+function drawJira(){
+  const lit=state.busy==="jira";
+  panelFrame(JIRA,lit,iconKanban);
+  const j=state.wk.jira, bx=JIRA.x+8, by=JIRA.y+20, colW=(JIRA.w-16)/3, ch=11, step=14;
+  const cols=["TO DO","IN PROGRESS","DONE"], counts=[Math.round(j.todo),Math.round(j.prog),Math.round(j.done)];
+  for(let c=0;c<3;c++){
+    px("#f4e7d6",bx+c*colW+2,by,colW-4,JIRA.h-28);
+    x.strokeStyle="rgba(168,140,152,0.4)";x.lineWidth=1;x.strokeRect(bx+c*colW+2.5,by+.5,colW-5,JIRA.h-29);
+    x.font='600 8px "IBM Plex Mono",monospace';x.fillStyle="#8a6a7a";x.textAlign="center";
+    x.fillText(cols[c],bx+c*colW+colW/2,by+8);x.textAlign="start";
+    for(let i=0;i<counts[c];i++){
+      const cy=by+14+i*step;
+      px("#fbf2e6",bx+c*colW+6,cy,colW-12,ch);
+      x.strokeStyle="rgba(168,140,152,0.45)";x.strokeRect(bx+c*colW+6.5,cy+.5,colW-13,ch-1);
+      px(c===2?P.ok:(c===1?P.warn:"#9a8aa0"),bx+c*colW+6,cy,3,ch);
+      px("#b29aa6",bx+c*colW+12,cy+3,colW-26,2);
+      px("#caa9b8",bx+c*colW+12,cy+7,colW-34,2);
+    }
+  }
+  if(j.linked>0){x.globalAlpha=clamp(j.linked);x.strokeStyle=P.warn;x.lineWidth=1;
+    x.beginPath();x.moveTo(bx+colW-6,by+22);x.lineTo(bx+colW+6,by+38);x.stroke();x.globalAlpha=1;}
+}
+function drawConf(){
+  const lit=state.busy==="conf";
+  panelFrame(CONF,lit,iconPage);
+  const cf=state.wk.conf, px0=CONF.x+14, py0=CONF.y+22, pw=150, ph=CONF.h-30;
+  px("#fffdf9",px0,py0,pw,ph);
+  x.strokeStyle="rgba(168,140,152,0.45)";x.lineWidth=1;x.strokeRect(px0+.5,py0+.5,pw-1,ph-1);
+  // cap lines so the last one (height up to 4px) stays inside the box
+  const maxLines=Math.floor((ph-7-4)/8)+1;
+  const lines=Math.min(maxLines,Math.round(cf.lines*5));
+  for(let i=0;i<lines;i++){const lw=(i===0?pw-20:pw-16-(i%3)*10);
+    px(i===0?"#7aa86a":"#b29aa6",px0+8,py0+7+i*8,lw,i===0?4:2);}
+  x.font='600 9px "IBM Plex Mono",monospace';x.fillStyle=P.ink2;x.textAlign="left";
+  x.fillText("read by "+Math.round(cf.readers)+" / 9 agents",px0+pw+18,py0+6);
+  if(cf.readers>0){x.fillStyle=P.agent;x.fillText("shared context",px0+pw+18,py0+19);
+    x.fillStyle="#8a6a7a";x.fillText("for the whole team",px0+pw+18,py0+32);}
+}
+function drawRepo(){
+  const lit=state.busy==="repo";
+  panelFrame(SKILLS,lit,iconRepo);
+  const r=state.wk.repo, bx=SKILLS.x+14, by=SKILLS.y+20;
+  if(r.committed<=0){
+    x.font='10px "IBM Plex Mono",monospace';x.fillStyle="#a98c98";x.textAlign="left";
+    x.fillText("empty. no shared skills yet.",bx,by+8);return;
+  }
+  x.globalAlpha=clamp(r.committed);
+  px(P.agent,bx,by,9,9);px(P.paper,bx+2,by+2,5,1);px(P.paper,bx+2,by+4,5,1);
+  x.font='600 11px "IBM Plex Mono",monospace';x.fillStyle=P.agent;x.textAlign="left";
+  x.fillText("pptx-skill.md",bx+16,by+8);
+  x.font='9px "IBM Plex Mono",monospace';x.fillStyle="#8a6a7a";
+  x.fillText("committed by Designer",bx+120,by+8);
+  x.globalAlpha=1;
+  if(r.pulled>0){x.globalAlpha=clamp(r.pulled);x.fillStyle="#8c2f39";
+    x.fillText("pulled by Writer agent on demand",bx+16,by+20);x.globalAlpha=1;}
+}
+function drawDash(){
+  const lit=state.busy==="dash"||state.busy==="pm";
+  panelFrame(DASH,lit,iconBars);
+  const d=state.wk.dash;
+  if(d.on<=0){
+    x.font='10px "IBM Plex Mono",monospace';x.fillStyle="#a98c98";x.textAlign="center";x.textBaseline="middle";
+    x.fillText("PM asking around. status unknown.",DASH.x+DASH.w/2,DASH.y+DASH.h/2);
+    x.textAlign="start";x.textBaseline="alphabetic";return;
+  }
+  const bx=DASH.x+10, by=DASH.y+22, rh=(DASH.h-34)/ROWS.length;
+  ROWS.forEach((r,i)=>{
+    const ry=by+i*rh;
+    x.font='600 9px "IBM Plex Mono",monospace';x.textBaseline="middle";
+    x.fillStyle="#5a4350";x.textAlign="left";x.fillText(r.who,bx,ry+rh/2);
+    const barX=bx+74, barW=190, prog=clamp(d.prog[r.key]);
+    px("#ead9c6",barX,ry+rh/2-4,barW,8);
+    x.strokeStyle="rgba(168,140,152,0.4)";x.lineWidth=1;x.strokeRect(barX+.5,ry+rh/2-3.5,barW-1,7);
+    const st=d.st[r.key];
+    const col=st==="done"?P.ok:st==="block"?P.fail:st==="prog"?P.warn:"#b29aa6";
+    px(col,barX,ry+rh/2-4,Math.round(barW*prog),8);
+    x.fillStyle=col;x.textAlign="left";
+    const label=st==="done"?"done":st==="block"?"blocked":st==="prog"?"in progress":"to do";
+    x.fillText(label,barX+barW+10,ry+rh/2);
+    x.textBaseline="alphabetic";
+  });
+  if(state.wk.gap<1){
+    const gx=DASH.x+10, gy=DASH.y+DASH.h-3;
+    x.font='700 8px "IBM Plex Mono",monospace';x.fillStyle=P.agent;x.textAlign="left";
+    x.fillText("junior context gap closed "+Math.round((1-state.wk.gap)*100)+"%",gx,gy-2);
+    x.textAlign="start";
+  }
+}
+
+/* ── chalk desks: a drawn floor-plan footprint under each person (Dogville).
+ * Replaces the old org connector lines. A desk lights up when its person is
+ * busy. ── */
+function drawDeskAt(p,key){
+  const s=p.big?1.35:1.05;
+  const w=Math.round(34*s), h=Math.round(13*s);
+  const cx=p.x, top=p.y+Math.round(20*s);
+  const act=state.busy===key;
+  x.save();
+  x.strokeStyle=act?"rgba(140,47,57,0.75)":"rgba(168,140,152,0.5)";
+  x.lineWidth=act?1.6:1;x.setLineDash([4,3]);
+  x.strokeRect(Math.round(cx-w/2)+.5,top+.5,w,h);
+  // a chalk "monitor" square on the desk
+  x.strokeRect(Math.round(cx-5*s)+.5,top-Math.round(6*s)+.5,Math.round(10*s),Math.round(7*s));
+  x.setLineDash([]);x.restore();
+}
+function drawDesks(){
+  drawDeskAt(PM,"pm");drawDeskAt(SUPS.a,"a");drawDeskAt(SUPS.b,"b");
+  for(const k in EMP)drawDeskAt(EMP[k],k);
+}
+
+/* ── the shared-context FIELD: Jira + Confluence framed as ONE pool every
+ * agent reads from and writes to. This is the "transformation" visual:
+ * the recorded context is the shared asset, not any one person's head. ── */
+function drawContextField(){
+  const a=state.wk.field;if(a<=0)return;
+  const fx=JIRA.x-6, fy=JIRA.y-6, fw=JIRA.w+12, fh=(CONF.y+CONF.h)-JIRA.y+12;
+  const pulse=0.5+Math.sin(state.t/360)*0.5;
+  x.globalAlpha=a*(0.35+pulse*0.3);
+  x.strokeStyle=P.agentBright;x.lineWidth=2;x.setLineDash([6,4]);
+  x.strokeRect(fx,fy,fw,fh);x.setLineDash([]);
+  x.globalAlpha=a;
+  // label tab
+  const lab="SHARED CONTEXT  ·  the recorded memory every agent works from";
+  x.font='700 8px "IBM Plex Mono",monospace';
+  const lw=Math.ceil(x.measureText(lab).width)+12;
+  px("#0c2b30",fx,fy-12,lw,12);
+  x.fillStyle=P.agentBright;x.textAlign="left";x.textBaseline="middle";
+  x.fillText(lab,fx+6,fy-6);x.textAlign="start";x.textBaseline="alphabetic";
+  x.globalAlpha=1;
+}
+
+/* ── a pixel person ── */
+function drawPerson(p,key){
+  const s=p.big?1.35:1.05, cx=p.x, cy=p.y;
+  const working=state.busy===key;
+  const bob=working?Math.round(Math.abs(Math.sin(state.t/150))*2):0;
+  const T=cy-24*s+bob;
+  x.fillStyle="rgba(120,90,110,0.16)";x.beginPath();x.ellipse(cx,cy+11,11*s,3.5,0,0,Math.PI*2);x.fill();
+  px(p.col2,cx-8*s,T+14*s,16*s,13*s);
+  px(p.col, cx-8*s,T+16*s,16*s,11*s);
+  px(P.paper,cx-3*s,T+14*s,6*s,11*s);
+  px(p.col2,cx-10*s,T+16*s,3*s,9*s);px(p.col2,cx+7*s,T+16*s,3*s,9*s);
+  px(P.skin,cx-5.5*s,T+2*s,11*s,11*s);
+  px("#3a2f25",cx-5.5*s,T+1*s,11*s,4*s);
+  px(P.ink,cx-2.8*s,T+7.5*s,1.5*s,1.5*s);px(P.ink,cx+1.6*s,T+7.5*s,1.5*s,1.5*s);
+  const blocked=p.junior&&state.wk.gap>0.6&&state.wk.agents<0.2;
+  if(blocked)px(P.fail,cx-3*s,T+10.5*s,6*s,1.3*s);
+  else if(working||state.wk.gap<0.3)px(P.ink,cx-2.5*s,T+10*s,5*s,1.3*s);
+  drawNamePlate(cx,cy+13,p.name,p.col,p.big);
+}
+function drawNamePlate(cx,topY,label,col,big){
+  const fpx=big?9:8;
+  x.font="bold "+fpx+'px "IBM Plex Mono",monospace';
+  const w=Math.ceil(x.measureText(label).width)+10,h=fpx+6;
+  px("rgba(253,250,245,0.97)",cx-w/2,topY,w,h);
+  x.strokeStyle=col;x.lineWidth=1.1;x.strokeRect(cx-w/2+.6,topY+.6,w-1.2,h-1.2);
+  x.fillStyle=P.ink;x.textAlign="center";x.textBaseline="middle";
+  x.fillText(label,cx,topY+h/2+.5);x.textAlign="start";x.textBaseline="alphabetic";
+}
+
+/* ── distinct AGENT LAYER: a little cat. Each cat's agent runs on a different
+ * provider, whose real logo sits under the cat's tail (the "agent of your
+ * choice"). Teal body keeps it reading as the agent layer, clearly not human. ── */
+function agentPos(p){const s=p.big?1.35:1.05;return {x:p.x+13*s,y:p.y-24*s-1};}
+
+/* the Claude mark: a 6-spoke burned-orange asterisk/sparkle */
+function drawClaudeStar(cx,cy,r,col){
+  x.strokeStyle=col||P.burnt;x.lineWidth=Math.max(1,r*0.42);x.lineCap="round";
+  for(let i=0;i<3;i++){const ang=i*Math.PI/3;
+    x.beginPath();
+    x.moveTo(cx-Math.cos(ang)*r,cy-Math.sin(ang)*r);
+    x.lineTo(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r);x.stroke();}
+  x.lineCap="butt";
+}
+
+/* provider logos, pre-rendered from real SVGs into <img> for crisp canvas
+ * drawing (Copilot keeps its full gradient). OpenAI/Gemini/xAI are tinted to
+ * the cat's teal so monochrome marks sit on the body cleanly; Copilot keeps
+ * brand colour since it is a coloured ribbon. */
+const PROV_SVG={
+  openai:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%TINT%"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>',
+  gemini:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%TINT%"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>',
+  xai:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%TINT%"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>',
+  copilot:'<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="2 4 43.998 40"><path fill="url(#a)" d="M34.142 7.325A4.63 4.63 0 0 0 29.7 4h-1.35a4.63 4.63 0 0 0-4.554 3.794L21.48 20.407l.575-1.965a4.63 4.63 0 0 1 4.444-3.33h7.853l3.294 1.282 3.175-1.283h-.926a4.63 4.63 0 0 1-4.443-3.325l-1.31-4.461z"/><path fill="url(#b)" d="M14.33 40.656A4.63 4.63 0 0 0 18.779 44h2.87a4.63 4.63 0 0 0 4.629-4.51l.312-12.163-.654 2.233a4.63 4.63 0 0 1-4.443 3.329h-7.919l-2.823-1.532-3.057 1.532h.912a4.63 4.63 0 0 1 4.447 3.344l1.279 4.423z"/><path fill="url(#c)" d="M29.5 4H13.46c-4.583 0-7.332 6.057-9.165 12.113C2.123 23.29-.72 32.885 7.503 32.885h6.925a4.63 4.63 0 0 0 4.456-3.358 2078.617 2078.617 0 0 1 4.971-17.156c.843-2.843 1.544-5.284 2.621-6.805C27.08 4.714 28.086 4 29.5 4z"/><path fill="url(#d)" d="M29.5 4H13.46c-4.583 0-7.332 6.057-9.165 12.113C2.123 23.29-.72 32.885 7.503 32.885h6.925a4.63 4.63 0 0 0 4.456-3.358 2078.617 2078.617 0 0 1 4.971-17.156c.843-2.843 1.544-5.284 2.621-6.805C27.08 4.714 28.086 4 29.5 4z"/><path fill="url(#e)" d="M18.498 44h16.04c4.582 0 7.332-6.058 9.165-12.115 2.171-7.177 5.013-16.775-3.208-16.775h-6.926a4.63 4.63 0 0 0-4.455 3.358 2084.036 2084.036 0 0 1-4.972 17.16c-.842 2.843-1.544 5.285-2.62 6.806-.604.852-1.61 1.566-3.024 1.566z"/><path fill="url(#f)" d="M18.498 44h16.04c4.582 0 7.332-6.058 9.165-12.115 2.171-7.177 5.013-16.775-3.208-16.775h-6.926a4.63 4.63 0 0 0-4.455 3.358 2084.036 2084.036 0 0 1-4.972 17.16c-.842 2.843-1.544 5.285-2.62 6.806-.604.852-1.61 1.566-3.024 1.566z"/><defs><radialGradient id="a" cx="0" cy="0" r="1" gradientTransform="matrix(-10.96051 -13.38922 12.59013 -10.30637 38.005 20.514)" gradientUnits="userSpaceOnUse"><stop offset=".096" stop-color="#00AEFF"/><stop offset=".773" stop-color="#2253CE"/><stop offset="1" stop-color="#0736C4"/></radialGradient><radialGradient id="b" cx="0" cy="0" r="1" gradientTransform="rotate(51.84 -28.201 27.85) scale(15.9912 15.5119)" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB657"/><stop offset=".634" stop-color="#FF5F3D"/><stop offset=".923" stop-color="#C02B3C"/></radialGradient><radialGradient id="e" cx="0" cy="0" r="1" gradientTransform="rotate(109.274 16.301 20.802) scale(38.3873 45.9867)" gradientUnits="userSpaceOnUse"><stop offset=".066" stop-color="#8C48FF"/><stop offset=".5" stop-color="#F2598A"/><stop offset=".896" stop-color="#FFB152"/></radialGradient><linearGradient id="c" x1="12.5" x2="14.788" y1="7.5" y2="33.975" gradientUnits="userSpaceOnUse"><stop offset=".156" stop-color="#0D91E1"/><stop offset=".487" stop-color="#52B471"/><stop offset=".652" stop-color="#98BD42"/><stop offset=".937" stop-color="#FFC800"/></linearGradient><linearGradient id="d" x1="14.5" x2="15.75" y1="4" y2="32.885" gradientUnits="userSpaceOnUse"><stop stop-color="#3DCBFF"/><stop offset=".247" stop-color="#0588F7" stop-opacity="0"/></linearGradient><linearGradient id="f" x1="42.586" x2="42.569" y1="13.346" y2="21.215" gradientUnits="userSpaceOnUse"><stop offset=".058" stop-color="#F8ADFA"/><stop offset=".708" stop-color="#A86EDD" stop-opacity="0"/></linearGradient></defs></svg>'
+};
+/* render each provider SVG into an Image once; ready flag flips when loaded */
+const PROV_IMG={};
+(function loadProviderLogos(){
+  const tint="%23c9682e"; // burned orange, url-encoded #
+  for(const k in PROV_SVG){
+    const svg=PROV_SVG[k].replace(/%TINT%/g,tint);
+    const img=new Image();
+    img.onload=()=>{PROV_IMG[k].ready=true;};
+    img.src="data:image/svg+xml;utf8,"+encodeURIComponent(svg);
+    PROV_IMG[k]={img,ready:false};
+  }
+})();
+
+/* draw the provider mark centred at (cx,cy) sized to ~d px under the tail */
+function drawProviderMark(prov,cx,cy,d){
+  if(prov==="claude"||!prov){drawClaudeStar(cx,cy,d*0.5,P.burnt);return;}
+  const e=PROV_IMG[prov];
+  if(!e||!e.ready){drawClaudeStar(cx,cy,d*0.5,P.burnt);return;} // fallback until loaded
+  const ar=e.img.naturalWidth/e.img.naturalHeight||1;
+  let w=d,h=d;if(ar>=1)h=d/ar;else w=d*ar;
+  x.drawImage(e.img,Math.round(cx-w/2),Math.round(cy-h/2),Math.round(w),Math.round(h));
+}
+
+/* a small sitting cat, drawn at scale s, centred on (cx,cy). Faces left.
+ * Tail curls up on the right; the orange star sits just under the tail. */
+function drawCatAt(cx,cy,s,a,working,prov){
+  cx=Math.round(cx);cy=Math.round(cy);
+  const body=P.agentCore, line=P.agentBright;
+  x.globalAlpha=a;
+  // soft halo when the agent is active
+  if(working){x.globalAlpha=a*0.16;x.fillStyle=P.agentBright;
+    x.beginPath();x.arc(cx,cy,12*s,0,Math.PI*2);x.fill();x.globalAlpha=a;}
+  // tail: a curved stroke rising on the right, drawn first (behind body)
+  x.strokeStyle=body;x.lineWidth=2.4*s;x.lineCap="round";
+  x.beginPath();
+  x.moveTo(cx+5*s,cy+4*s);
+  x.quadraticCurveTo(cx+12*s,cy+2*s,cx+11*s,cy-6*s);
+  x.stroke();
+  x.strokeStyle=line;x.lineWidth=0.8*s;x.stroke();
+  x.lineCap="butt";
+  // the provider mark, tucked just under the curl of the tail
+  drawProviderMark(prov,cx+11*s,cy+6*s,6.2*s);
+  // haunch / body (rounded)
+  x.fillStyle=body;
+  rr(cx-6*s,cy-3*s,12*s,11*s,3*s);x.fill();
+  // head
+  rr(cx-6.5*s,cy-11*s,11*s,9*s,3*s);x.fill();
+  // ears (triangles)
+  x.beginPath();
+  x.moveTo(cx-6*s,cy-9*s);x.lineTo(cx-7.5*s,cy-14*s);x.lineTo(cx-3*s,cy-11*s);x.closePath();
+  x.moveTo(cx+6*s,cy-9*s);x.lineTo(cx+7.5*s,cy-14*s);x.lineTo(cx+3*s,cy-11*s);x.closePath();
+  x.fill();
+  // thin bright outline pass so the silhouette pops on pastel
+  x.strokeStyle=line;x.lineWidth=0.9*s;
+  rr(cx-6.5*s,cy-11*s,11*s,9*s,3*s);x.stroke();
+  rr(cx-6*s,cy-3*s,12*s,11*s,3*s);x.stroke();
+  // eyes (bright)
+  x.fillStyle=P.agentBright;
+  x.fillRect(cx-3.4*s,cy-8*s,1.8*s,2*s);x.fillRect(cx+1.6*s,cy-8*s,1.8*s,2*s);
+  // burnt-orange collar
+  x.fillStyle=P.burnt;x.fillRect(cx-5*s,cy-2.4*s,10*s,1.6*s);
+  // little antenna whisker-node so it still reads as a digital helper
+  x.strokeStyle=line;x.lineWidth=0.9*s;
+  x.beginPath();x.moveTo(cx,cy-13.5*s);x.lineTo(cx,cy-16.5*s);x.stroke();
+  x.fillStyle="#9af2e6";x.beginPath();x.arc(cx,cy-17*s,1.4*s,0,Math.PI*2);x.fill();
+  x.globalAlpha=1;
+}
+/* rounded-rect path helper */
+function rr(X,Y,w,h,r){r=Math.min(r,w/2,h/2);x.beginPath();
+  x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);
+  x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();}
+
+function drawAgentOrb(p,a){
+  if(a<=0)return;
+  const pos=agentPos(p),t=state.t;
+  const bob=Math.sin(t/300+p.x)*1.4;
+  const working=state.busy===keyOf(p);
+  // faint thread from the cat to its person
+  x.globalAlpha=a*0.28;x.strokeStyle=P.agentBright;x.lineWidth=0.8;
+  x.beginPath();x.moveTo(pos.x,pos.y+8);x.lineTo(p.x+(p.big?6:4),p.y-18);x.stroke();
+  x.globalAlpha=1;
+  drawCatAt(pos.x,pos.y+bob,p.big?1.15:0.92,a,working,p.prov);
+}
+function keyOf(p){if(p===PM)return"pm";for(const k in SUPS)if(SUPS[k]===p)return k;
+  for(const k in EMP)if(EMP[k]===p)return k;return null;}
+
+/* ── travelling tokens (cooperation) ── */
+function drawTokens(){
+  for(const tk of state.tokens){
+    const p=Math.min(1,tk.t/tk.dur);
+    const e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+    const tx=tk.from.x+(tk.to.x-tk.from.x)*e, ty=tk.from.y+(tk.to.y-tk.from.y)*e-5;
+    x.fillStyle=tk.glow;x.beginPath();x.arc(tx,ty,6,0,Math.PI*2);x.fill();
+    px(tk.col,tx-2.5,ty-2.5,5,5);px(P.cream,tx-1,ty-1,2,2);
+    if(tk.label){x.font='700 8px "IBM Plex Mono",monospace';x.textAlign="center";
+      const w=Math.ceil(x.measureText(tk.label).width)+10;
+      px("rgba(253,250,245,0.97)",tx-w/2,ty-17,w,12);
+      x.strokeStyle=tk.col;x.lineWidth=1.1;x.strokeRect(tx-w/2+.5,ty-16.5,w-1,11);
+      x.fillStyle=tk.col;x.textBaseline="middle";x.fillText(tk.label,tx,ty-10.5);
+      x.textBaseline="alphabetic";x.textAlign="start";}
+  }
+}
+function sendToken(from,to,kind,label){
+  const map={task:{col:P.accent,glow:"rgba(140,47,57,0.3)"},
+             result:{col:P.ok,glow:"rgba(76,196,126,0.3)"},
+             skill:{col:P.agentBright,glow:"rgba(57,214,194,0.32)"},
+             ctx:{col:P.warn,glow:"rgba(232,184,74,0.3)"}}[kind];
+  const dur=560/state.speed;
+  const tk={from:{x:from.x,y:from.y},to:{x:to.x,y:to.y},t:0,dur,col:map.col,glow:map.glow,label};
+  state.tokens.push(tk);
+  return new Promise(res=>{const start=performance.now();
+    const tick=()=>{tk.t=performance.now()-start;
+      if(tk.t>=tk.dur){state.tokens.splice(state.tokens.indexOf(tk),1);res();}
+      else requestAnimationFrame(tick);};tick();});
+}
+
+/* ── speech bubbles: human (purple, above head) and agent (cyan, by orb) ── */
+function drawBubbles(){
+  for(const who in state.bubbles){const b=state.bubbles[who];if(!b)continue;
+    const p=personByKey(who);if(!p)continue;
+    // top-row speakers (the PM) have no room above; put the bubble to the
+    // side at head height so it never covers the face.
+    if(p.y<110)drawBubble(b.text,p.x,p.y-8,b.col,false,"side");
+    else drawBubble(b.text,p.x,p.y-(p.big?46:40),b.col,false);}
+  for(const who in state.agentBubbles){const b=state.agentBubbles[who];if(!b)continue;
+    const p=personByKey(who);if(!p)continue;const pos=agentPos(p);
+    drawBubble(b.text,pos.x+8,pos.y-6,P.agentBubble,true);}
+}
+function drawBubble(text,bx,by,col,isAgent,side){
+  col=col||P.accent;
+  x.font='600 9px "IBM Plex Mono",monospace';x.textAlign="left";
+  const lines=wrap(text,26);const w=Math.max(...lines.map(l=>x.measureText(l).width))+(isAgent?22:14);
+  const maxX=state.view==="closeup"?W:500;
+  const lh=12,h=lines.length*lh+10;
+  if(side){
+    // box sits to the RIGHT of the speaker, vertically centred on the head,
+    // tail on its left edge pointing back at the person. Flips left if it
+    // would run past the region edge.
+    let lx=bx+16, ly=Math.max(3,by-h/2);
+    let tailLeft=true;
+    if(lx+w>maxX-4){lx=bx-16-w;tailLeft=false;}
+    x.fillStyle="rgba(253,250,245,0.98)";x.fillRect(lx,ly,w,h);
+    x.strokeStyle=col;x.lineWidth=1.5;x.strokeRect(lx+.75,ly+.75,w-1.5,h-1.5);
+    x.fillStyle=col;x.beginPath();
+    if(tailLeft){x.moveTo(lx,by-4);x.lineTo(lx,by+4);x.lineTo(lx-5,by);}
+    else{x.moveTo(lx+w,by-4);x.lineTo(lx+w,by+4);x.lineTo(lx+w+5,by);}
+    x.fill();
+    x.fillStyle=P.ink;lines.forEach((l,i)=>x.fillText(l,lx+7,ly+12+i*lh));x.textAlign="start";
+    return;
+  }
+  let lx=bx-w/2;lx=Math.max(4,Math.min(maxX-w-4,lx));let ly=by-h;ly=Math.max(3,ly);
+  x.fillStyle=isAgent?"rgba(232,255,251,0.98)":"rgba(253,250,245,0.98)";x.fillRect(lx,ly,w,h);
+  x.strokeStyle=col;x.lineWidth=1.5;x.strokeRect(lx+.75,ly+.75,w-1.5,h-1.5);
+  x.fillStyle=col;x.beginPath();x.moveTo(bx-4,ly+h);x.lineTo(bx+4,ly+h);x.lineTo(bx,ly+h+5);x.fill();
+  if(isAgent){x.save();x.translate(lx+9,ly+h/2);x.rotate(Math.PI/4);x.fillStyle=P.agentBright;x.fillRect(-2.5,-2.5,5,5);x.restore();}
+  x.fillStyle=P.ink;lines.forEach((l,i)=>x.fillText(l,lx+(isAgent?15:7),ly+12+i*lh));x.textAlign="start";
+}
+function wrap(t,n){const w=t.split(" ");const out=[];let c="";for(const word of w){
+  if((c+" "+word).trim().length>n){out.push(c.trim());c=word;}else c+=" "+word;}
+  if(c.trim())out.push(c.trim());return out;}
+
+/* ── camera focus (shared by both views) ── */
+function beginCamera(){
+  const tgt=state.focus,c=state.cam;
+  c.tx=tgt.x;c.ty=tgt.y;c.tz=tgt.z;
+  const k=0.06;c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;
+  x.save();
+  x.translate(W/2,H/2);x.scale(c.z,c.z);
+  const maxX=(W/2)*(c.z-1)/c.z,maxY=(H/2)*(c.z-1)/c.z;
+  const px_=Math.max(-maxX,Math.min(maxX,W/2-c.x));
+  const py_=Math.max(-maxY,Math.min(maxY,H/2-c.y));
+  x.translate(-W/2+px_,-H/2+py_);
+}
+function endCamera(){x.restore();}
+function drawScene(){
+  if(state.view==="closeup"){drawCuScene();return;}
+  beginCamera();
+  drawBackground();
+  drawJira();drawConf();drawRepo();drawDash();
+  drawContextField();
+  drawDesks();
+  drawPerson(PM,"pm");drawPerson(SUPS.a,"a");drawPerson(SUPS.b,"b");
+  for(const k in EMP)drawPerson(EMP[k],k);
+  if(state.showAgents){const a=state.wk.agents;
+    drawAgentOrb(PM,a);drawAgentOrb(SUPS.a,a);drawAgentOrb(SUPS.b,a);
+    for(const k in EMP)drawAgentOrb(EMP[k],a);}
+  drawTokens();drawBubbles();
+  endCamera();
+}
+
+/* ABORTED: thrown when Reset interrupts a running beat. playAll/nextBeat
+ * catch it silently so the chain just stops. */
+const ABORTED=Symbol("aborted");
+/* pause-aware, abortable tween. Uses elapsed-time accounting so pausing
+ * freezes progress instead of fast-forwarding on resume. */
+function tween(setter,from,to,ms){
+  const token=state.abort;
+  return new Promise((res,rej)=>{
+    const dur=ms/state.speed;let elapsed=0,prev=performance.now();
+    const step=()=>{
+      if(state.abort!==token)return rej(ABORTED);
+      const now=performance.now();
+      if(!state.paused){elapsed+=now-prev;}
+      prev=now;
+      const p=Math.min(1,elapsed/dur);
+      const e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;setter(from+(to-from)*e);
+      if(p>=1)res();else requestAnimationFrame(step);};
+    requestAnimationFrame(step);});
+}
+/* pause-aware, abortable wait */
+function wait(ms){
+  const token=state.abort;
+  return new Promise((res,rej)=>{
+    const dur=ms/state.speed;let elapsed=0,prev=performance.now();
+    const step=()=>{
+      if(state.abort!==token)return rej(ABORTED);
+      const now=performance.now();
+      if(!state.paused)elapsed+=now-prev;
+      prev=now;
+      if(elapsed>=dur)res();else requestAnimationFrame(step);};
+    requestAnimationFrame(step);});
+}
+
+/* ── feed / phases / caption ── */
+const FEED=document.getElementById("feed");
+function feedMsg(who,text,isAgent){
+  const col=who==="PM"?PM.col:(SUPS[who]||EMP[who]||{}).col||
+    (Object.values(SUPS).concat(Object.values(EMP)).find(p=>p.name===who)||{}).col||"#c7b0f0";
+  const d=document.createElement("div");d.className="msg";
+  d.innerHTML=`<span class="av${isAgent?' agent':''}" style="background:${col}"></span>`+
+    `<span class="bd"><span class="who" style="color:${isAgent?'var(--agent-bright)':col}">${who}${isAgent?" agent":""}</span>${text}</span>`;
+  FEED.appendChild(d);FEED.scrollTop=FEED.scrollHeight;
+}
+function feedSys(t){const d=document.createElement("div");d.className="sys";d.textContent=t;FEED.appendChild(d);FEED.scrollTop=FEED.scrollHeight;}
+function setPhase(p,st){state.phaseState[p]=st;renderPhases();}
+function renderPhases(){const bar=document.getElementById("phasebar");bar.innerHTML="";
+  const phs=state.view==="closeup"?CU_PHASES:PHASES;
+  phs.forEach(p=>{const d=document.createElement("div");d.className="ph "+(state.phaseState[p]||"");d.textContent=p;bar.appendChild(d);});}
+function setCaption(phase,stn,text){document.getElementById("capPhase").textContent=phase;
+  document.getElementById("capStn").textContent=stn;document.getElementById("capText").innerHTML=text;}
+function speak(who,text,col){state.bubbles[who]={text,col:col||P.accent};}
+function hush(who){delete state.bubbles[who];}
+function speakAgent(who,text){state.agentBubbles[who]={text};}
+function hushAgent(who){delete state.agentBubbles[who];}
+function clearTalk(){state.bubbles={};state.agentBubbles={};}
+function focusOn(pt,z){state.focus={x:pt.x,y:pt.y,z:z||1};}
+function focusAll(){state.focus={x:W/2,y:H/2,z:1};}
+
+/* reading time scales with text length so nothing flashes by */
+function readMs(text){return 1500+text.length*45;}
+/* gentle zoom while talking so the bubble always fits in frame */
+function focusSpeaker(p){focusOn({x:p.x,y:p.y-6},1.1);}
+
+/* THE camera + bubble contract:
+ * - only ONE bubble is ever on screen (clearTalk first)
+ * - whenever a bubble shows, the camera is on that speaker
+ * - panels are focused only in silence (see focusSystem) */
+async function sayHuman(key,text,col){
+  clearTalk();const p=personByKey(key);if(p)focusSpeaker(p);
+  speak(key,text,col);await wait(readMs(text));
+}
+async function sayAgent(key,text){
+  clearTalk();const p=personByKey(key);if(p)focusSpeaker(p);
+  speakAgent(key,text);await wait(readMs(text));
+}
+/* focus a system panel ONLY when no one is speaking */
+function focusSystem(panel,z){clearTalk();focusOn(panelCenter(panel),z||1.12);}
+
+/* ════ trace ════ */
+const TERM=document.getElementById("term");const CURSOR='<span class="cur"></span>';
+function termType(segments){return new Promise(res=>{
+  const prev=TERM.querySelector(".ln:last-child .cur");if(prev)prev.remove();
+  const line=document.createElement("span");line.className="ln";TERM.appendChild(line);
+  const chars=[];segments.forEach(s=>{for(const ch of s.t)chars.push({ch,c:s.c});});
+  let i=0,acc=0,lastT=performance.now();
+  const step=()=>{const now=performance.now();acc+=(now-lastT);lastT=now;const perChar=8/state.speed;
+    while(acc>=perChar&&i<chars.length){acc-=perChar;const{ch,c}=chars[i];
+      let span=line.lastElementChild;
+      if(!span||span.dataset.cls!==(c||"")){span=document.createElement("span");span.className=c||"";span.dataset.cls=c||"";line.appendChild(span);}
+      span.textContent+=ch;i++;}
+    TERM.scrollTop=TERM.scrollHeight;
+    if(i<chars.length)requestAnimationFrame(step);
+    else{line.insertAdjacentHTML("beforeend",CURSOR);TERM.scrollTop=TERM.scrollHeight;res();}};
+  requestAnimationFrame(step);});}
+function termRaw(html){const prev=TERM.querySelector(".ln:last-child .cur");if(prev)prev.remove();
+  const line=document.createElement("span");line.className="ln";line.innerHTML=html+CURSOR;
+  TERM.appendChild(line);TERM.scrollTop=TERM.scrollHeight;}
+
+/* ════ results helpers ════ */
+function litResult(id,on){document.getElementById(id).classList.toggle("lit",on);}
+function setText(id,t){document.getElementById(id).textContent=t;}
+const deckCv=document.getElementById("deck"),deckX=deckCv.getContext("2d");
+function drawDeck(p){
+  const W2=deckCv.width,H2=deckCv.height;
+  deckX.clearRect(0,0,W2,H2);deckX.fillStyle="#f3e8d8";deckX.fillRect(0,0,W2,H2);
+  if(p<=0){
+    // placeholder so the frame is never a dead box before the deck renders
+    deckX.strokeStyle="#caa9b8";deckX.lineWidth=2;deckX.setLineDash([6,5]);
+    deckX.strokeRect(44,22,W2-88,H2-44);deckX.setLineDash([]);
+    deckX.fillStyle="#a98c98";deckX.font='600 11px "IBM Plex Mono",monospace';deckX.textAlign="center";
+    deckX.fillText("the deck renders here when the Writer pulls the skill",W2/2,H2/2);
+    deckX.textAlign="start";return;
+  }
+  const sx=40,sy=18,sw=W2-80,sh=H2-36;
+  deckX.fillStyle="#fffdf9";deckX.fillRect(sx,sy,sw,sh);
+  deckX.strokeStyle="#caa9b8";deckX.lineWidth=1;deckX.strokeRect(sx+.5,sy+.5,sw-1,sh-1);
+  deckX.fillStyle="#8c2f39";deckX.fillRect(sx,sy,sw,26);
+  deckX.fillStyle="#fff";deckX.font='600 13px "IBM Plex Mono",monospace';
+  deckX.fillText("Q3 Pilot, status",sx+12,sy+18);
+  deckX.fillStyle="#c9682e";deckX.fillRect(sx+12,sy+38,60,4);
+  const bullets=Math.round(clamp((p-0.2)/0.8)*4);
+  for(let i=0;i<bullets;i++){deckX.fillStyle="#c9682e";deckX.fillRect(sx+12,sy+54+i*16,8,8);
+    deckX.fillStyle="#b29aa6";deckX.fillRect(sx+26,sy+56+i*16,sw-60-(i%2)*30,5);}
+  deckX.fillStyle="#8c2f39";deckX.font='600 9px "IBM Plex Mono",monospace';
+  deckX.fillText("practice-engine",sx+sw-100,sy+sh-10);
+}
+drawDeck(0);
+
+/* ════ interactive skill builder ════
+ * The PM plays with the rules and watches pptx-skill.md rewrite live.
+ * Two rules are tied to the RECORDED SHARED CONTEXT (Jira/Confluence,
+ * recorded meeting) so the file itself teaches the core idea: the agent
+ * works from what the team wrote down, not from memory. */
+const SKILL_RULES=[
+  {key:"template", on:false, title:"Use the team template and colours",
+   body:"Start from the shared brand template so every deck looks the same.",
+   md:"Use the team template and brand colours."},
+  {key:"oneIdea", on:false, title:"One idea per slide",
+   body:"Title, agenda, then one point per slide. No walls of text.",
+   md:"Title slide, agenda, then one idea per slide."},
+  {key:"jira",    on:false, title:"Pull live figures from Jira",
+   body:"Numbers come from the active sprint, not from memory or last week.",
+   ctx:"recorded context", md:"Pull live status and figures from Jira (active sprint), never from memory."},
+  {key:"conf",    on:false, title:"Quote the spec from Confluence",
+   body:"Decisions and scope are quoted from the written spec, so the deck matches reality.",
+   ctx:"recorded context", md:"Quote scope and decisions from the current Confluence spec."},
+  {key:"transcript", on:false, title:"Turn the recorded meeting into notes",
+   body:"The agent reads the meeting transcript and adds the decisions as speaker notes.",
+   ctx:"recorded context", md:"Read the recorded meeting transcript; add decisions as speaker notes."},
+  {key:"export",  on:false, title:"Export .pptx and attach to the ticket",
+   body:"Render the file and attach it back to the Jira ticket automatically.",
+   md:"Export to .pptx and attach the file to the Jira ticket."},
+];
+/* read the custom-skill form (empty strings if a field is untouched) */
+function customSkill(){
+  const v=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
+  return {name:v("fName"),desc:v("fDesc"),steps:v("fSteps"),tools:v("fTools"),viz:v("fViz"),tone:v("fTone")};
+}
+function kebab(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");}
+function skillName(){const c=customSkill();return c.name?kebab(c.name):"kebab-skill";}
+function skillMd(){
+  const on=SKILL_RULES.filter(r=>r.on), c=customSkill();
+  const name=skillName();
+  const desc=c.desc||"How this team builds a branded status deck. The agent reads this before it works.";
+  const L=["---","name: "+name,"description: "+desc,"---","","# "+(c.name||"Branded deck skill"),""];
+  if(on.length){L.push("## Rules","");on.forEach(r=>L.push("- "+r.md));L.push("");}
+  if(c.steps){L.push("## Steps","");c.steps.split("\n").map(s=>s.trim()).filter(Boolean).forEach((s,i)=>L.push((i+1)+". "+s));L.push("");}
+  if(c.tools){L.push("## Tools","");c.tools.split(",").map(t=>t.trim()).filter(Boolean).forEach(t=>L.push("- "+t));L.push("");}
+  if(c.viz){L.push("## Visual style","",c.viz,"");}
+  if(c.tone){L.push("## Writing style","",c.tone,"");}
+  if(!on.length&&!c.steps&&!c.tools&&!c.viz&&!c.tone){
+    L.push("# (empty - turn on a rule above, or fill in the fields, and this file fills in.)");
+  }
+  return L.join("\n");
+}
+function highlightMd(md){
+  return md.split("\n").map(line=>{
+    const s=esc(line);
+    if(/^---\s*$/.test(line))return '<span class="c">'+s+'</span>';
+    if(/^#/.test(line))return '<span class="h">'+s+'</span>';
+    if(/^\s*\d+\.\s/.test(line))return s.replace(/^(\s*\d+\.)/,'<span class="b">$1</span>');
+    if(/^- /.test(line)){
+      return s.replace(/^- /,'<span class="b">- </span>').replace(/(Jira|Confluence|transcript|recorded meeting|spec)/g,'<span class="ctx">$1</span>');
+    }
+    if(/^[a-z_]+:/.test(line))return s.replace(/^([a-z_]+)(:)/,'<span class="k">$1</span>$2');
+    return s;
+  }).join("\n");
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function renderBuilder(){
+  const wrap=document.getElementById("brules");if(!wrap)return;
+  wrap.innerHTML="";
+  SKILL_RULES.forEach(r=>{
+    const row=document.createElement("div");row.className="brule"+(r.on?" on":" off");
+    row.innerHTML='<div class="sw"></div><div><div class="rt">'+esc(r.title)+'</div>'+
+      '<div class="rb">'+esc(r.body)+'</div>'+
+      (r.ctx?'<span class="ctxtag">'+esc(r.ctx)+'</span>':'')+'</div>';
+    row.addEventListener("click",()=>{r.on=!r.on;renderBuilder();syncCommittedSkill();});
+    wrap.appendChild(row);
+  });
+  const md=skillMd();
+  document.getElementById("bPreview").innerHTML=highlightMd(md);
+  const n=SKILL_RULES.filter(r=>r.on).length;
+  document.getElementById("bCount").textContent=n===1?"1 rule on":n+" rules on";
+  // filename + install path follow the custom skill name
+  const name=skillName();
+  document.getElementById("bFileName").textContent=name+".md (SKILL.md)";
+  document.getElementById("bInstall").textContent="~/.claude/skills/"+name+"/SKILL.md";
+}
+/* the committed-skill card in the Results pane shows the team's actual
+ * pptx skill from the story (fixed), independent of the builder toggles
+ * which now start empty for the user to fill in themselves. */
+function syncCommittedSkill(){
+  const body=document.getElementById("skillBody");
+  if(body)body.textContent="# Branded deck skill\n"+SKILL_RULES.map(r=>"- "+r.md).join("\n");
+}
+(function wireBuilder(){
+  renderBuilder();
+  // live re-render as the user types their own skill
+  ["fName","fDesc","fSteps","fTools","fViz","fTone"].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.addEventListener("input",renderBuilder);});
+  const copy=document.getElementById("bCopy"),dl=document.getElementById("bDownload"),done=document.getElementById("bDone");
+  if(copy)copy.addEventListener("click",async()=>{
+    try{await navigator.clipboard.writeText(skillMd());done.classList.add("show");
+      setTimeout(()=>done.classList.remove("show"),1400);}catch(e){}});
+  if(dl)dl.addEventListener("click",()=>{
+    const blob=new Blob([skillMd()],{type:"text/markdown"});const u=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=u;a.download="SKILL.md";document.body.appendChild(a);a.click();
+    document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),1000);});
+})();
+
+/* ════ mechanics rail + payoff ════ */
+function lightMech(m){const e=document.querySelector(`.mech[data-m="${m}"]`);if(e)e.classList.add("on");}
+function resetMech(){document.querySelectorAll(".mech").forEach(e=>e.classList.remove("on"));}
+function renderPayoff(){
+  const rows=[
+    ["PM chases two leads who chase six people for status","PM asks once, the agent answers from Jira and Confluence"],
+    ["Context lives in people's heads, juniors wait","One shared context, anyone's agent can read it"],
+    ["Every meeting ends in a write-up nobody does","Transcript becomes linked, assigned tickets"],
+    ["A skill lives with one expert, others redo it by hand","Commit pptx-skill.md once, teammates pull it when needed"],
+    ["A junior needs a senior to unblock every step","Junior ships senior-grade work autonomously"],
+    ["PM is the bottleneck and the translator","PM and supervisors decide together, dashboard stays live"],
+  ];
+  const body=document.getElementById("payoffBody");body.innerHTML="";
+  rows.forEach(([a,b])=>{const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="was">${a}</td><td class="now"><b>${b}</b></td>`;body.appendChild(tr);});
+  document.getElementById("payoff").style.display="block";
+}
+function hidePayoff(){document.getElementById("payoff").style.display="none";}
+
+/* ════════════════════════════════════════════════════════════════
+ * BEATS, click-to-advance. Each shows real human <-> agent exchange.
+ * ════════════════════════════════════════════════════════════════ */
+async function beatBefore(){
+  setPhase("BEFORE","on");
+  setCaption("BEFORE","a normal day","A real team: a <b>PM</b>, two <b>supervisors</b>, six people. The systems on the right sit empty. To learn anything the PM has to ask a supervisor, who asks their people. A <b>junior is blocked</b>, waiting on a senior. The dashboard reads unknown.");
+  feedSys("A normal day. Status lives in people's heads.");
+  feedMsg("PM","Wants status. Has to go ask for it.");
+  await sayHuman("pm","Sup Build. Status. Where are we?",PM.col);
+  feedMsg("Sup Build","Doesn't know yet. Has to round people up.");
+  await sayHuman("a","Give me an hour. I'll ask around.","#3074a0");
+  feedMsg("Junior","Ready to work. Missing the one thing he needs.",false);
+  await sayHuman("a2","I'd ship it. Nobody sent me the spec.","#3074a0");
+  clearTalk();
+  setPhase("BEFORE","done");
+}
+async function beatAgents(){
+  setPhase("AGENTS","on");focusAll();
+  setCaption("AGENTS","everyone gets an agent","Now <span class='agc'>every person gets their own agent</span>, not just the PM. They are the glowing markers beside each desk, clearly <b>not human</b>. You talk to yours in plain words; it does the looking-up and the busywork.");
+  feedSys("Agents provisioned for the whole team, 9 people.");
+  lightMech("agents");
+  await tween(v=>state.wk.agents=v,0,1,1100);
+  await sayHuman("pm","One each. Not just mine. Everyone's.",PM.col);
+  feedMsg("My Agent","Nine online. Mine, and the other eight.",true);
+  await sayAgent("pm","Online. You talk, I do the looking.");
+  clearTalk();
+  setPhase("AGENTS","done");
+}
+async function beatAsk(){
+  setPhase("ASK","on");
+  setCaption("ASK","ask in plain words, agent finds it","The relatable part. The PM does not write a query, they just <b>ask</b>. Their agent <b>searches Jira and reads Confluence</b>, then answers in plain language. The dashboard lights up with what it found.");
+  feedMsg("PM","Same question as before. New way to answer it.");
+  await sayHuman("pm","Where are we. What's blocked.",PM.col);
+  // agent works: silent stretch, so we may show the systems
+  feedMsg("My Agent","Reading Jira and the spec, not guessing.",true);
+  await sayAgent("pm","Already in Jira. Spec's next.");
+  clearTalk();state.busy="jira";focusSystem(JIRA);
+  await termType([{t:"> ",c:"arrow"},{t:"agent",c:"be"},{t:"(pm) : ",c:""},{t:"jira.search(sprint=active) + confluence.get_page",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await sendToken(panelCenter(JIRA),agentPos(PM),"ctx","results");
+  state.busy="dash";focusSystem(DASH);
+  state.wk.dash.on=1;
+  state.wk.dash.st={a1:"prog",a2:"block",a3:"todo",b1:"todo",b2:"prog",b3:"todo"};
+  await tween(v=>{state.wk.dash.prog.a1=v*0.5;state.wk.dash.prog.b2=v*0.4;},0,1,1000);
+  await wait(700);
+  // agent answers: focus returns to the PM so the bubble is in frame
+  feedMsg("My Agent","Build mid-sprint. Ship starting. One blocker, the Junior.",true);
+  await sayAgent("pm","Build's fine. One blocker. Junior, no spec.");
+  clearTalk();state.busy=null;
+  setPhase("ASK","done");
+}
+async function beatBuild(){
+  setPhase("BUILD","on");
+  setCaption("BUILD","the team builds, agents do the writing","People describe intent, their agents <b>write the tickets</b> into Jira and <b>write the spec</b> into Confluence. Once the spec exists, the Junior's agent reads it and the <b>blocker clears</b>. A recorded brainstorm becomes linked tickets, no one transcribes by hand.");
+  lightMech("context");litResult("resCtx",true);
+  document.getElementById("ctxEmpty").style.display="none";
+  document.getElementById("ctxBands").style.display="flex";
+  // Dev asks, agent confirms (both focused on Dev)
+  feedMsg("Dev","Describes the work. The agent files it.");
+  await sayHuman("a1","Reconciliation ticket. Acceptance criteria too.","#3074a0");
+  await sayAgent("a1","PROJ-142. Dependency linked. Done.");
+  // silent: write to Jira
+  clearTalk();state.busy="jira";focusSystem(JIRA);
+  await termType([{t:"> ",c:"arrow"},{t:"agent",c:"be"},{t:"(dev) : ",c:""},{t:"jira.create_issue : create_issue_link(blocks)",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await tween(v=>{state.wk.jira.todo=v;setText("ctxTickets",Math.round(state.wk.jira.todo+state.wk.jira.prog+state.wk.jira.done));},0,3,1000);
+  await tween(v=>state.wk.jira.prog=v,0,2,800);
+  await tween(v=>state.wk.jira.linked=v,0,1,400);
+  // silent: write spec to Confluence
+  state.busy="conf";focusSystem(CONF);
+  feedMsg("My Agent","Spec goes in Confluence. Where everyone can read it.",true);
+  await termType([{t:"> ",c:"arrow"},{t:"confluence.create_page(spec)",c:""},{t:" : linked to PROJ-142",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await tween(v=>state.wk.conf.lines=v,0,1,900);
+  await tween(v=>{state.wk.conf.readers=v;setText("ctxPages",Math.max(1,Math.round(v/3)));},0,9,800);
+  // Junior unblocks: focused on the Junior for the whole exchange
+  state.busy="a2";
+  feedMsg("Junior","The thing he was missing now just exists.",false);
+  await sayHuman("a2","The spec. Is it real yet?","#3074a0");
+  await sayAgent("a2","Real. In Confluence. Here's what to build.");
+  state.wk.dash.st.a2="prog";
+  await tween(v=>{state.wk.gap=v;state.wk.dash.prog.a2=1-v;},1,0.05,1300);
+  state.wk.dash.st.a2="done";state.wk.dash.prog.a2=1;
+  lightMech("gap");
+  feedMsg("Junior","Same person. Same skill. Nothing in the way now.",false);
+  await sayHuman("a2","Spec's here. Now I just ship it.","#3074a0");
+  // transcript to tickets (PM-focused, then silent system work)
+  feedMsg("PM","The meeting already happened. Make it count.");
+  await sayHuman("pm","We talked it through. Turn the recording into tickets.",PM.col);
+  clearTalk();state.busy="jira";focusSystem(JIRA);
+  await termType([{t:"> ",c:"arrow"},{t:"skill",c:"be"},{t:"(transcript-to-tickets)",c:""},{t:" : ",c:""},{t:"jira.batch_create_issues(6) : link : assign",c:""}]);
+  await sendToken(agentPos(PM),panelCenter(JIRA),"ctx","transcript");
+  await tween(v=>state.wk.jira.prog=v,2,3,700);
+  await tween(v=>{state.wk.transcript=v;setText("ctxTr",Math.round(v*6));},0,1,700);
+  feedMsg("My Agent","Six tickets out of one conversation. Linked. Assigned.",true);
+  await termRaw('<span class="ok">context shared</span> <span class="dim">anyone\'s agent can read the same Jira and Confluence</span>');
+  await wait(600);state.busy=null;litResult("resCtx",false);
+  setPhase("BUILD","done");
+}
+async function beatContext(){
+  setPhase("CONTEXT","on");
+  setCaption("CONTEXT","the shared context does the work","This is the real change, not just speed. Jira and Confluence and the recorded meetings become <b>one shared memory</b>. Every agent <b>reads from it and writes back to it at the same time</b>, so the work moves without anyone re-explaining anything. The agents carry the context; the people decide.");
+  feedSys("The recorded context becomes the team's shared memory.");
+  lightMech("context");
+  // light up the field that frames Jira + Confluence as one pool
+  focusSystem(JIRA,1.05);
+  await tween(v=>state.wk.field=v,0,1,900);
+  state.busy="conf";
+  // every agent reads from and writes to the SAME field. Tokens converge on
+  // one pool, so they go label-free (the field frame + caption say it) and
+  // are staggered, never a crowded simultaneous arrival that overlaps labels.
+  // Each agent aims at a slightly different point inside the field band so
+  // the streams stay legible.
+  feedMsg("My Agent","Same context. Same page. Saves everyone the argument.",true);
+  const fieldPt=()=>({x:JIRA.x+40+Math.round((state.t*0.7)%(JIRA.w-80)),
+                      y:JIRA.y+24+Math.round(((state.t*0.5)%((CONF.y+CONF.h)-JIRA.y-40)))});
+  const writers=["a1","a3","b2"], readers=["a2","b1","b3"];
+  const stagger=(fn,i)=>new Promise(r=>setTimeout(async()=>{await fn();r();},i*140/state.speed));
+  await Promise.all([
+    ...writers.map((k,i)=>stagger(()=>sendToken(agentPos(EMP[k]),fieldPt(),"ctx"),i)),
+    ...readers.map((k,i)=>stagger(()=>sendToken(fieldPt(),agentPos(EMP[k]),"result"),i+0.5)),
+  ]);
+  await Promise.all([
+    ...readers.map((k,i)=>stagger(()=>sendToken(agentPos(EMP[k]),fieldPt(),"ctx"),i)),
+    ...writers.map((k,i)=>stagger(()=>sendToken(fieldPt(),agentPos(EMP[k]),"result"),i+0.5)),
+  ]);
+  await termType([{t:"> ",c:"arrow"},{t:"all agents",c:"be"},{t:" : ",c:""},{t:"read + write the same Jira / Confluence / transcript",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await termRaw('<span class="ok">work reinvented</span> <span class="dim">no one re-explains context; the agents carry it, the people decide</span>');
+  await wait(700);
+  clearTalk();state.busy=null;
+  setPhase("CONTEXT","done");
+}
+async function beatShare(){
+  setPhase("SHARE","on");
+  setCaption("SHARE","commit a skill to the repo","The Designer has a good way to build branded decks. Instead of staying the only one who can, they write <b>pptx-skill.md</b> and <b>commit it to the shared skills repo</b>. One push. Nothing is forced on anyone.");
+  lightMech("skill");litResult("resSkill",true);
+  // Designer-focused exchange
+  feedMsg("Designer","Only one who can make these. About to fix that.");
+  await sayHuman("b1","The deck thing I do. Make it a skill. Commit it.","#2f9a72");
+  await sayAgent("b1","Writing it down once. Pushing pptx-skill.md.");
+  syncCommittedSkill();
+  await tween(v=>state.wk.skill.written=v,0,1,800);
+  // silent: commit to repo
+  clearTalk();state.busy="repo";focusSystem(SKILLS);
+  await termType([{t:"> ",c:"arrow"},{t:"Designer agent",c:"be"},{t:" : ",c:""},{t:"skill.commit(pptx-skill.md)",c:""},{t:" -> ",c:""},{t:"skills repo",c:"bm"}]);
+  await sendToken(agentPos(EMP.b1),panelCenter(SKILLS),"skill","pptx-skill.md");
+  await tween(v=>state.wk.repo.committed=v,0,1,700);
+  document.getElementById("skillBadge").classList.add("on");
+  feedSys("pptx-skill.md is in the repo. Anyone can pull it when they need it.");
+  await termRaw('<span class="ok">committed</span> <span class="dim">no broadcast, it just sits in the repo until someone needs it</span>');
+  await wait(800);litResult("resSkill",false);state.busy=null;
+  setPhase("SHARE","done");
+}
+async function beatUse(){
+  setPhase("USE","on");
+  setCaption("USE","pull it when you need it","Later, the Writer actually needs a deck. They ask their agent, which <b>pulls pptx-skill.md from the repo on demand</b> and renders a branded deck. The Writer never learned the template, the skill carried it.");
+  litResult("resSkill",true);
+  // Writer-focused exchange
+  feedMsg("Writer","Never learned the template. Won't have to.");
+  await sayHuman("b3","Q3 status deck. The branding too. Can you?","#2f9a72");
+  await sayAgent("b3","Pulling the Designer's skill. Then rendering.");
+  // silent: pull from repo
+  clearTalk();state.busy="repo";focusSystem(SKILLS);
+  await termType([{t:"> ",c:"arrow"},{t:"Writer agent",c:"be"},{t:" : ",c:""},{t:"skill.pull(pptx-skill.md)",c:""},{t:" <- ",c:""},{t:"skills repo",c:"bm"}]);
+  await sendToken(panelCenter(SKILLS),agentPos(EMP.b3),"skill","pptx-skill.md");
+  await tween(v=>state.wk.repo.pulled=v,0,1,600);
+  await termType([{t:"> ",c:"arrow"},{t:"Writer agent",c:"be"},{t:" uses pptx-skill, pulls figures, renders ",c:""},{t:"Q3-pilot.pptx",c:""}]);
+  await tween(v=>{state.wk.skill.deck=v;drawDeck(v);},0,1,1300);
+  feedMsg("Writer","On brand. Built by someone who never learned it.",false);
+  await sayHuman("b3","On brand. And I never learned the template.","#2f9a72");
+  await termRaw('<span class="ok">deck rendered from the shared skill</span> <span class="dim">pulled on demand, not pushed</span>');
+  await wait(600);litResult("resSkill",false);state.busy=null;clearTalk();
+  setPhase("USE","done");
+}
+async function beatMonitor(){
+  setPhase("MONITOR","on");
+  setCaption("MONITOR","decide together, dashboard stays live","No more status chasing. The <b>dashboard fills itself</b> from the shared context. The PM and a supervisor <b>talk it through</b> and reprioritise together, in seconds, instead of a meeting.");
+  // silent: dashboard fills
+  state.busy="dash";focusSystem(DASH);state.wk.dash.on=1;
+  state.wk.dash.st={a1:"prog",a2:"done",a3:"prog",b1:"done",b2:"prog",b3:"done"};
+  const order=["a1","a3","b2","b3"];
+  await tween(v=>{order.forEach((k,i)=>{state.wk.dash.prog[k]=clamp(v-(i*0.05));});},0,1.1,1300);
+  // move finished work into Jira's Done column so the board agrees with the dashboard
+  await tween(v=>{state.wk.jira.prog=v;},3,1,500);
+  await tween(v=>{state.wk.jira.done=v;},0,2,500);
+  await termType([{t:"> ",c:"arrow"},{t:"dashboard",c:"be"},{t:" : ",c:""},{t:"jira.search(sprint=active) : render rows live",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await wait(500);
+  // PM <-> supervisor, each focused on the speaker
+  feedMsg("PM","No meeting. Just the board, and a question.");
+  await sayHuman("pm","Ship's light. Release notes, pull them forward?",PM.col);
+  feedMsg("Sup Ship","Writer just freed up. Easy call.");
+  await sayHuman("b","Writer's free. Moving it up. Done.","#2f9a72");
+  await termRaw('<span class="ok">dashboard live</span> <span class="dim">PM and supervisor decide together, no sync meeting</span>');
+  await wait(500);clearTalk();state.busy=null;
+  setPhase("MONITOR","done");
+}
+async function beatRedesigned(){
+  setPhase("REINVENTED","on");focusAll();
+  setCaption("REINVENTED","the org, reinvented","People still do the deciding and the talking. Their agents do the looking-up, the writing, and the busywork, and share what they learn through Jira, Confluence, and the skills repo. <b>The gap between junior and PM is erased. The work got reinvented, not just sped up.</b>");
+  feedSys("The gap between junior and PM is erased.");
+  await sayHuman("pm","Agents carry the context. We make the calls.",PM.col);
+  renderPayoff();
+  await wait(800);clearTalk();
+  setPhase("REINVENTED","done");
+}
+
+const BEATS=[beatBefore,beatAgents,beatAsk,beatBuild,beatContext,beatShare,beatUse,beatMonitor,beatRedesigned];
+
+/* ════════════════════════════════════════════════════════════════
+ * AGENT CLOSE-UP. Same canvas, same camera, pushed all the way in on
+ * ONE person and their agent. Shows the real agent loop in technical
+ * terms: prompt -> reasoning (chain-of-thought) -> load skill ->
+ * MCP tool calls -> render -> self-eval (reject + re-render) ->
+ * response. The reject/re-render is the part most demos hide.
+ * ════════════════════════════════════════════════════════════════ */
+const CU_PHASES=["PROMPT","REASON","SKILL","MCP CALL","RENDER","EVAL","RESPONSE"];
+const CU={
+  pm:{x:60,y:232,col:PM.col,col2:PM.col2,name:"PM",big:true,prov:"claude"},
+  home:{x:180,y:300},   // where the agent sits to reason (no station, just thinks)
+  stn:{
+    skill:{x:360,y:316,label:"status-skill.md"},
+    mcp:  {x:545,y:316,label:"MCP tool calls"},
+    draft:{x:725,y:316,label:"render"},
+  },
+  bin:{x:866,y:330},
+  hover:300,           // y the agent floats at (just above each desk)
+  cardLift:64,         // how far above a station its overlay card floats
+};
+
+function cuInit(){
+  state.cu={
+    agent:{x:CU.home.x,y:CU.home.y,act:"idle"},
+    think:null,       // {lines:[...]}  chain-of-thought cloud
+    skill:null,       // {lines:[...], on:bool}
+    mcp:null,         // {jira:0,conf:0,picked:null}
+    draft:{sheet:0,bars:0,tone:"warn",look:false,title:""},
+    ball:{x:0,y:0,active:false},
+    carry:false,      // agent carrying the finished answer
+  };
+}
+
+/* ── close-up scene render (through the shared camera) ── */
+function drawCuScene(){
+  beginCamera();
+  // backdrop: same office palette, single focused room
+  x.fillStyle=P.wall;x.fillRect(0,0,W,30);
+  x.fillStyle=P.floor;x.fillRect(0,30,W,H-30);
+  x.fillStyle=P.wall2;x.fillRect(0,28,W,3);
+  drawChalkFloor(0,30,W,H-30);
+  drawWindow(150,8,90,18);drawWindow(420,8,90,18);drawWindow(690,8,90,18);
+  x.font='700 8px "IBM Plex Mono",monospace';x.fillStyle="#8a6a7a";x.textAlign="left";
+  x.fillText("INSIDE ONE AGENT  ·  one prompt, start to finish",14,46);x.textAlign="start";
+  drawPlant(40,H-12);drawPlant(900,H-12);
+
+  cuDrawStations();
+  cuDrawBin();
+  drawPerson(CU.pm,"cupm");
+  cuDrawEasel();
+  cuDrawSkillCard();
+  cuDrawMcpHub();
+  if(state.cu.ball.active)cuDrawBall();
+  cuDrawAgent();
+  cuDrawThink();
+  cuDrawBubbles();
+  endCamera();
+}
+function cuDrawBubbles(){
+  const hb=state.bubbles["cupm"];
+  // PM is at the top-left edge; put the bubble to the side so it never covers the head
+  if(hb)drawBubble(hb.text,CU.pm.x,CU.pm.y-8,hb.col,false,"side");
+  const ab=state.agentBubbles["cuagent"];
+  // agent bubble to the side of the drone, head height, so it never collides
+  // with the station card floating above the agent
+  if(ab){const a=state.cu.agent;drawBubble(ab.text,a.x,a.y,P.agentBubble,true,"side");}
+}
+
+function cuLabel(cx,baseY,text,col){
+  x.font='bold 8px "IBM Plex Mono",monospace';
+  const w=Math.ceil(x.measureText(text).width)+10,h=13;
+  px("rgba(253,250,245,0.97)",cx-w/2,baseY,w,h);
+  x.strokeStyle=col||P.accent;x.lineWidth=1;x.strokeRect(cx-w/2+.5,baseY+.5,w-1,h-1);
+  x.fillStyle=P.ink;x.textAlign="center";x.textBaseline="middle";
+  x.fillText(text,cx,baseY+h/2+.5);x.textAlign="start";x.textBaseline="alphabetic";
+}
+
+function cuDrawStations(){
+  // small floor furniture per station so the room reads as a workshop
+  for(const k in CU.stn){const s=CU.stn[k];
+    const lit=state.cu.agent.act!=="idle" && nearStation(k);
+    // a small desk/plinth, pastel with a chalk top edge
+    px("#e3cdb4",s.x-22,s.y-6,44,10);
+    px(lit?P.accent:P.roof,s.x-22,s.y-6,44,3);
+    cuLabel(s.x,s.y+8,s.label,lit?P.accent:"#a98c98");
+  }
+}
+function nearStation(k){const s=CU.stn[k];return Math.abs(state.cu.agent.x-s.x)<26;}
+
+function cuDrawBin(){
+  const b=CU.bin;
+  px("#e3cdb4",b.x-9,b.y-14,18,18);
+  px(P.roof,b.x-9,b.y-14,18,3);
+  for(let i=0;i<3;i++)px("#caa9b8",b.x-9+i*7+2,b.y-11,2,14);
+  cuLabel(b.x,b.y+8,"DISCARD","#a98c98");
+}
+
+/* the star of the close-up: a larger cat with the Claude asterisk under its
+ * tail. Same teal-agent identity as the team view, drawn bigger. */
+function cuDrawAgent(){
+  const a=state.cu.agent,t=state.t;
+  const bob=Math.sin(t/300)*2.2;
+  const cx=a.x, cy=a.y+bob;
+  const working=a.act!=="idle";
+  const S=2.0; // close-up scale
+  // manipulator beam toward the work when writing/drawing/tooling (behind the cat)
+  if(working){
+    let tx=cx,ty=cy+24;
+    if(a.act==="draw"){const e=CU.stn.draft;tx=e.x;ty=e.y-42;}
+    x.strokeStyle=P.agentBright;x.globalAlpha=0.55;x.lineWidth=1;
+    x.setLineDash([2,3]);x.beginPath();x.moveTo(cx,cy+10);x.lineTo(tx,ty);x.stroke();
+    x.setLineDash([]);x.globalAlpha=1;
+    const sp=Math.sin(t/90)*2;px("#9af2e6",tx-1+sp,ty-1,2,2);
+  }
+  drawCatAt(cx,cy,S,1,working,CU.pm.prov||"claude");
+  // a brighter scan-blink across the eyes when looking/reading
+  if(a.act==="look"||a.act==="read"){
+    x.strokeStyle="#cffff7";x.lineWidth=1.2;x.globalAlpha=0.8;
+    x.beginPath();x.moveTo(cx-7*S/2,cy-7*S/2);x.lineTo(cx+7*S/2,cy-7*S/2);x.stroke();x.globalAlpha=1;
+  }
+  // carrying the finished answer page (in the cat's "paws", below the body)
+  if(state.cu.carry){
+    px(P.cream,cx-6,cy+13,12,15);
+    x.strokeStyle=P.ok;x.lineWidth=1;x.strokeRect(cx-5.5,cy+13.5,11,14);
+    px(P.ok,cx-3,cy+16,7,1.5);px("#b29aa6",cx-3,cy+19,7,1.2);px("#b29aa6",cx-3,cy+22,5,1.2);
+  }
+  // label, clear above the cat
+  cuLabel(cx,cy-44,"PM's agent",P.agent);
+}
+
+/* reasoning: a thought cloud above the agent showing its chain-of-thought.
+ * This is the model REASONING about the prompt before it acts, not a notebook. */
+function cuDrawThink(){
+  const n=state.cu.think;if(!n)return;
+  const a=state.cu.agent;
+  const lh=13, padX=10, padTop=16, padBot=8;
+  x.font='9px "IBM Plex Mono",monospace';
+  const tw=Math.max(...n.lines.map(l=>x.measureText(l.text).width));
+  const w=Math.ceil(tw)+padX*2, h=padTop+n.lines.length*lh+padBot;
+  const bx=Math.round(a.x+22), by=Math.round(a.y-h-22);
+  // cloud body
+  px("rgba(0,0,0,0.22)",bx+2,by+2,w,h);
+  x.fillStyle="rgba(235,247,255,0.98)";
+  x.fillRect(bx,by,w,h);
+  x.strokeStyle="#6a64a0";x.lineWidth=1.3;x.strokeRect(bx+.6,by+.6,w-1.2,h-1.2);
+  // little thought puffs trailing down to the drone
+  x.fillStyle="rgba(235,247,255,0.98)";
+  [[bx-2,by+h+3,3],[bx-7,by+h+9,2]].forEach(([cx,cy,r])=>{
+    x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fill();
+    x.strokeStyle="#6a64a0";x.stroke();});
+  // header
+  x.fillStyle="#3a3566";x.font='bold 8px "IBM Plex Mono",monospace';x.textAlign="left";
+  x.fillText("reasoning",bx+padX,by+11);
+  // lines, each fades in as the model "thinks"
+  x.font='9px "IBM Plex Mono",monospace';
+  n.lines.forEach((ln,i)=>{
+    x.fillStyle=ln.dim?"#8a86ad":"#1f2c4a";
+    x.fillText(ln.text,bx+padX,by+padTop+10+i*lh);
+  });
+  x.textAlign="start";
+}
+
+/* skill card: a ready-made instruction the agent opens (pulled, not written) */
+function cuDrawSkillCard(){
+  const sk=state.cu.skill;if(!sk)return;
+  const s=CU.stn.skill, w=176, lh=13, head=18, h=head+6+sk.lines.length*lh+6;
+  const bx=Math.round(s.x-w/2), by=Math.round(s.y-h-CU.cardLift);
+  cuFloatCard(bx,by,w,h,head,"status-skill.md","reusable",P.agent);
+  x.font='9px "IBM Plex Mono",monospace';x.textAlign="left";
+  sk.lines.forEach((ln,i)=>{
+    const ly=by+head+8+i*lh;
+    x.fillStyle=P.agent;x.fillText("•",bx+8,ly);
+    x.fillStyle=sk.on?P.ink:"#9a93ab";x.fillText(ln,bx+18,ly);
+  });
+  x.textAlign="start";
+}
+
+/* MCP hub: agent reaches Jira + Confluence through one connector */
+function cuDrawMcpHub(){
+  const h=state.cu.mcp;if(!h)return;
+  const s=CU.stn.mcp, w=176, ht=70;
+  const bx=Math.round(s.x-w/2), by=Math.round(s.y-ht-CU.cardLift);
+  cuFloatCard(bx,by,w,ht,18,"MCP connector","live services","#0f9d8f");
+  // two service tiles, fill as data arrives
+  const svc=[["Jira","tickets",h.jira,P.warn],["Confluence","the spec",h.conf,"#5f93b8"]];
+  svc.forEach((sv,i)=>{
+    const tx=bx+10+i*((w-20)/2)+ (i?6:0), tw=(w-26)/2, ty=by+26, th=34;
+    px("#f4e7d6",tx,ty,tw,th);
+    const on=h.picked===sv[0]||sv[2]>0;
+    x.strokeStyle=on?sv[3]:"#caa9b8";x.lineWidth=1;x.strokeRect(tx+.5,ty+.5,tw-1,th-1);
+    x.font='bold 9px "IBM Plex Mono",monospace';x.fillStyle=on?sv[3]:"#a98c98";x.textAlign="center";
+    x.fillText(sv[0],tx+tw/2,ty+13);
+    x.font='8px "IBM Plex Mono",monospace';x.fillStyle="#8a6a7a";
+    x.fillText(sv[1],tx+tw/2,ty+24);
+    // fill bar
+    px("#e3cdb4",tx+5,ty+th-7,tw-10,3);
+    px(sv[3],tx+5,ty+th-7,Math.round((tw-10)*clamp(sv[2])),3);
+  });
+  x.textAlign="start";
+}
+
+/* easel: where the agent DRAWS the dashboard, and where it crumples + redraws */
+function cuDrawEasel(){
+  const d=state.cu.draft;
+  const s=CU.stn.draft, bw=84, bh=62, bx=Math.round(s.x-bw/2), by=Math.round(s.y-bh-12);
+  // tripod
+  x.strokeStyle="#a98c98";x.lineWidth=2;
+  x.beginPath();x.moveTo(bx+12,by+bh);x.lineTo(bx+4,by+bh+14);
+  x.moveTo(bx+bw-12,by+bh);x.lineTo(bx+bw-4,by+bh+14);
+  x.moveTo(bx+bw/2,by+bh);x.lineTo(bx+bw/2,by+bh+14);x.stroke();
+  // board
+  if(d.sheet<=0){return;} // nothing pinned yet
+  px("rgba(120,90,110,0.18)",bx-2,by-2,bw+4,bh+4);
+  px("#fffdf9",bx,by,bw,bh);
+  x.strokeStyle="#caa9b8";x.lineWidth=1;x.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+  // title
+  x.font='bold 8px "IBM Plex Mono",monospace';x.fillStyle=P.accentD;x.textAlign="center";
+  x.fillText(d.title||"Q3 STATUS",bx+bw/2,by+11);x.textAlign="start";
+  // baseline + bars
+  const baseY=by+bh-9, n=4, slot=(bw-14)/n;
+  px(P.ink,bx+7,baseY,bw-14,1);
+  const cols={ok:P.ok,warn:P.warn,fail:P.fail};
+  const heights=d.tone==="ok"?[26,21,16,11]:[12,27,9,22]; // ok=clean descending; warn=jagged/wrong
+  for(let i=0;i<d.bars;i++){
+    const bhh=heights[i],bx2=bx+9+i*slot,by2=baseY-bhh;
+    px(cols[d.tone],bx2,by2,slot-4,bhh);
+    if(d.tone==="warn"&&i===2)px(P.fail,bx2,by2,slot-4,3); // a glaring bad value
+  }
+  // magnifier while the agent "looks"
+  if(d.look){
+    const mx=bx+bw-12,my=by+bh/2;
+    x.strokeStyle=P.accentD;x.lineWidth=2;x.beginPath();x.arc(mx,my,8,0,Math.PI*2);x.stroke();
+    x.beginPath();x.moveTo(mx+6,my+6);x.lineTo(mx+13,my+13);x.stroke();
+  }
+}
+
+/* the crumpled-paper ball flying to the bin */
+function cuDrawBall(){
+  const b=state.cu.ball;
+  x.fillStyle="#efe6fa";x.beginPath();x.arc(b.x,b.y,5,0,Math.PI*2);x.fill();
+  x.strokeStyle="#b9a7d6";x.lineWidth=1;
+  x.beginPath();x.moveTo(b.x-3,b.y-2);x.lineTo(b.x+2,b.y+1);x.moveTo(b.x-1,b.y+3);x.lineTo(b.x+3,b.y-3);x.stroke();
+}
+
+function cuFloatCard(bx,by,w,h,head,title,sub,col){
+  px("rgba(0,0,0,0.28)",bx+2,by+2,w,h);
+  px(P.paper,bx,by,w,h);
+  x.strokeStyle=col;x.lineWidth=1.3;x.strokeRect(bx+.6,by+.6,w-1.2,h-1.2);
+  px(col,bx,by,w,head);
+  x.font='bold 9px "IBM Plex Mono",monospace';x.fillStyle="#fff";x.textAlign="left";x.textBaseline="middle";
+  x.fillText(title,bx+6,by+head/2);
+  const titleW=x.measureText(title).width;
+  x.font='8px "IBM Plex Mono",monospace';
+  const subX=bx+6+titleW+10;
+  // only draw the subtitle if it fits inside the header; otherwise drop it (the title carries the meaning)
+  if(sub && subX+x.measureText(sub).width <= bx+w-6){
+    x.fillStyle="rgba(255,255,255,0.8)";x.fillText(sub,subX,by+head/2);
+  }
+  x.textBaseline="alphabetic";x.textAlign="start";
+  // tail toward the station below
+  x.fillStyle=col;x.beginPath();x.moveTo(bx+w/2-4,by+h);x.lineTo(bx+w/2+4,by+h);x.lineTo(bx+w/2,by+h+6);x.fill();
+}
+
+/* ── close-up movement + speech helpers ── */
+function cuMoveTo(tx,ty,ms){
+  const a=state.cu.agent,fx=a.x,fy=a.y;
+  return tween(p=>{a.x=fx+(tx-fx)*p;a.y=fy+(ty-fy)*p;},0,1,ms||900);
+}
+function cuGoStation(k){const s=CU.stn[k];return cuMoveTo(s.x,CU.hover,900);}
+async function cuSayPM(text){clearTalk();focusOn({x:CU.pm.x+30,y:CU.pm.y-6},1.35);
+  speak("cupm",text,PM.col);await wait(readMs(text));}
+async function cuSayAgent(text){clearTalk();
+  const a=state.cu.agent;focusOn({x:a.x,y:a.y+4},1.45);
+  state.agentBubbles["cuagent"]={text};await wait(readMs(text));}
+/* agent bubble is anchored manually to the free-floating drone */
+function cuFocusStation(k,z){clearTalk();const s=CU.stn[k];focusOn({x:s.x,y:CU.hover+2},z||1.7);}
+/* show only the current station's overlay; the trail lives in the phase bar + trace */
+function cuClearOverlays(keep){
+  if(keep!=="note")state.cu.note=null;
+  if(keep!=="skill")state.cu.skill=null;
+  if(keep!=="mcp")state.cu.mcp=null;
+}
+
+/* ════ the seven close-up beats (real agent loop, technical terms) ════ */
+async function cuPrompt(){
+  setPhase("PROMPT","on");
+  setCaption("PROMPT","the prompt","The same PM as the team view, zoomed all the way in on their agent. The PM types one <b>prompt</b> in plain language. No query, no API. That prompt plus its context window is everything the agent starts with.");
+  feedSys("Close-up: one prompt through the full agent loop.");
+  state.cu.agent.act="idle";
+  // PM speaks directly to its agent (no envelope: a person is right here)
+  await cuSayPM("Where are we. What's blocked.");
+  await termType([{t:"user",c:"be"},{t:" -> ",c:""},{t:"agent",c:"be"},{t:" : prompt received (context window loaded)",c:""}]);
+  await cuSayAgent("Prompt's in. Now I work out what it needs.");
+  clearTalk();setPhase("PROMPT","done");
+}
+async function cuReason(){
+  setPhase("REASON","on");
+  setCaption("REASON","reasoning","Before any action the model <b>reasons</b>: it breaks the prompt into steps and decides which tools it will need. This is the chain-of-thought, the part you normally never see. It is thinking, not a saved file.");
+  cuClearOverlays(null);
+  await cuMoveTo(CU.home.x,CU.home.y,700);state.cu.agent.act="read";
+  focusOn({x:CU.home.x+30,y:CU.home.y-40},1.5);
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"reasoning",c:"bm"},{t:" -> decompose request",c:""}]);
+  const steps=[
+    "needs current sprint status",
+    "+ blockers -> read live data",
+    "follow status-skill rules",
+    "render, then self-check",
+  ];
+  state.cu.think={lines:[]};
+  for(let i=0;i<steps.length;i++){
+    state.cu.think.lines.push({text:steps[i],dim:false});
+    // older lines dim as the latest appears
+    state.cu.think.lines.forEach((l,j)=>l.dim=j<state.cu.think.lines.length-1);
+    await wait(620);
+  }
+  await wait(400);
+  state.cu.agent.act="idle";state.cu.think=null;
+  setPhase("REASON","done");
+}
+async function cuSkill(){
+  setPhase("SKILL","on");
+  setCaption("SKILL","load the skill","It does not improvise the format. It <b>loads a skill</b>, status-skill.md, a reusable instruction in its context that says how a good status answer is built. Write it once, every agent follows it.");
+  await cuGoStation("skill");state.cu.agent.act="read";cuFocusStation("skill");cuClearOverlays("skill");
+  state.cu.skill={on:false,lines:["live tickets, not memory","quote the current spec","one bar per person","blocked items in red"]};
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"load_skill(status-skill.md)",c:""},{t:" -> 4 rules in context",c:""}]);
+  await tween(()=>{},0,1,500);state.cu.skill.on=true;
+  await cuSayAgent("Skill's loaded. Live tickets. One bar each. The rules.");
+  clearTalk();state.cu.agent.act="idle";await wait(200);
+  setPhase("SKILL","done");
+}
+async function cuConnect(){
+  setPhase("MCP CALL","on");
+  setCaption("MCP CALL","tool calls over MCP","Now it needs real data. <b>MCP</b> is the protocol that lets the agent call live tools. It makes two <b>tool calls</b>: <b>jira.search</b> for the tickets and <b>confluence.get_page</b> for the spec, so the answer is grounded in current state, not a guess from training data.");
+  await cuGoStation("mcp");state.cu.agent.act="tool";cuFocusStation("mcp");cuClearOverlays("mcp");
+  state.cu.mcp={jira:0,conf:0,picked:null};
+  state.cu.mcp.picked="Jira";
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"jira.search(sprint=active, status!=done)",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await tween(v=>state.cu.mcp.jira=v,0,1,800);
+  state.cu.mcp.picked="Confluence";
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"confluence.get_page(\"Q3 spec\")",c:""},{t:"  ",c:""},{t:"[MCP]",c:"bm"}]);
+  await tween(v=>state.cu.mcp.conf=v,0,1,800);
+  state.cu.mcp.picked=null;
+  await cuSayAgent("6 tickets. 1 blocker. Spec fetched. Now it's real.");
+  clearTalk();state.cu.agent.act="idle";await wait(200);
+  setPhase("MCP CALL","done");
+}
+async function cuDraft(){
+  setPhase("RENDER","on");
+  setCaption("RENDER","render output","With grounded data it <b>renders</b> the dashboard, a first pass. Quick and rough. Watch the next step, the agent does not return this straight away.");
+  cuClearOverlays(null);await cuMoveTo(CU.stn.draft.x-50,CU.hover,900);state.cu.agent.act="draw";cuFocusStation("draft");
+  state.cu.draft={sheet:1,bars:0,tone:"warn",look:false,title:"Q3 STATUS"};
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"render_dashboard(rows, draft #1)",c:""}]);
+  for(let i=0;i<4;i++){state.cu.draft.bars=i+1;await wait(360);}
+  await wait(400);state.cu.agent.act="idle";
+  setPhase("RENDER","done");
+}
+async function cuRecheck(){
+  setPhase("EVAL","on");
+  setCaption("EVAL","self-eval, then re-render","The key move. The agent runs an <b>eval</b> on its own output against the skill rules. Draft #1 fails, one row is stale. So it <b>discards the draft and re-renders</b> from fresh data. It catches its own mistake before you ever see it.");
+  // step back and look
+  const dr=CU.stn.draft;
+  await cuMoveTo(dr.x-72,CU.hover-10,600);state.cu.agent.act="look";state.cu.draft.look=true;
+  cuFocusStation("draft",1.7);
+  await cuSayAgent("Checking my own work. Junior row's stale. Draft #1's out.");
+  clearTalk();
+  await termRaw('<span class="dim">eval(draft #1) vs status-skill: FAIL (stale row)</span>');
+  // discard: board clears, ball flies to bin
+  state.cu.draft.look=false;state.cu.draft.bars=0;state.cu.draft.sheet=0;
+  state.cu.ball={x:dr.x,y:dr.y-40,active:true};
+  state.cu.agent.act="idle";
+  await tween(p=>{const b=state.cu.ball;
+    b.x=dr.x+(CU.bin.x-dr.x)*p;
+    b.y=(dr.y-40)+(CU.bin.y-12-(dr.y-40))*p - Math.sin(p*Math.PI)*26;},0,1,800);
+  state.cu.ball.active=false;
+  await termRaw('<span class="ok">draft #1 discarded</span> <span class="dim">re-running with fresh data, no one saw the bad one</span>');
+  await wait(250);
+  // re-render, clean
+  await cuMoveTo(dr.x-50,CU.hover,500);state.cu.agent.act="draw";
+  state.cu.draft={sheet:1,bars:0,tone:"ok",look:false,title:"Q3 STATUS"};
+  await termType([{t:"agent",c:"be"},{t:" : ",c:""},{t:"render_dashboard(rows, draft #2)",c:""},{t:" : ",c:""},{t:"eval PASS",c:"ok"}]);
+  for(let i=0;i<4;i++){state.cu.draft.bars=i+1;await wait(360);}
+  await wait(300);state.cu.agent.act="idle";
+  await cuSayAgent("Draft #2. Clean. Current. One bar each. Eval passed.");
+  clearTalk();
+  setPhase("EVAL","done");
+}
+async function cuDeliver(){
+  setPhase("RESPONSE","on");
+  setCaption("RESPONSE","the response","Only now does the agent <b>return its response</b> to the PM, in plain language. The PM never saw the reasoning, the skill, the MCP calls, or the rejected draft. They sent one prompt and got a clean, eval-passed answer.");
+  state.cu.carry=true;state.cu.agent.act="idle";
+  clearTalk();focusOn({x:(CU.pm.x+CU.stn.draft.x)/2,y:240},1.05);
+  await cuMoveTo(CU.pm.x+52,CU.pm.y-20,1100);
+  state.cu.carry=false;
+  await cuSayAgent("Build's on track. Blocker's cleared. Dashboard's live.");
+  clearTalk();
+  await cuSayPM("One question. One answer. No meeting.");
+  clearTalk();
+  feedSys("This same loop runs inside every person's agent, all day.");
+  await wait(300);
+  setPhase("RESPONSE","done");
+}
+
+const CU_BEATS=[cuPrompt,cuReason,cuSkill,cuConnect,cuDraft,cuRecheck,cuDeliver];
+
+/* ── view-aware stepping ── */
+function activeBeats(){return state.view==="closeup"?CU_BEATS:BEATS;}
+let beatIdx=-1;
+function updateBeatN(){document.getElementById("beatn").textContent=`beat ${beatIdx+1} / ${activeBeats().length}`;}
+/* Play button doubles as Pause while running. Next is disabled during play. */
+function setPlayLabel(){
+  const b=document.getElementById("play");
+  b.innerHTML=state.running?(state.paused?"&#9654; Resume":"&#10073;&#10073; Pause"):"&#9654; Play all";
+}
+async function nextBeat(){
+  const beats=activeBeats();
+  if(state.running||beatIdx>=beats.length-1)return;
+  state.running=true;document.getElementById("next").disabled=true;setPlayLabel();
+  try{
+    beatIdx++;updateBeatN();
+    await beats[beatIdx]();
+  }catch(e){if(e!==ABORTED)throw e;return;} // reset interrupted: bail
+  if(beatIdx>=beats.length-1)document.getElementById("next").textContent="Done";
+  state.running=false;setPlayLabel();
+  if(beatIdx<beats.length-1)document.getElementById("next").disabled=false;
+}
+async function playAll(){
+  // if already playing, this button is Pause/Resume
+  if(state.running){state.paused=!state.paused;setPlayLabel();return;}
+  const beats=activeBeats();
+  if(beatIdx>=beats.length-1)return;
+  state.running=true;state.paused=false;document.getElementById("next").disabled=true;setPlayLabel();
+  try{
+    while(beatIdx<beats.length-1){beatIdx++;updateBeatN();await beats[beatIdx]();await wait(600);}
+  }catch(e){if(e!==ABORTED)throw e;return;} // reset interrupted
+  document.getElementById("next").textContent="Done";document.getElementById("next").disabled=true;
+  state.running=false;state.paused=false;setPlayLabel();
+}
+
+function resetRun(){
+  // abort any in-flight beat: bump the token so pending wait/tween reject
+  state.abort++;state.running=false;state.paused=false;
+  state.tokens=[];state.bubbles={};state.agentBubbles={};state.busy=null;state.phaseState={};
+  state.focus={x:W/2,y:H/2,z:1};state.cam={x:W/2,y:H/2,z:1,tx:W/2,ty:H/2,tz:1};
+  state.wk={agents:0,jira:{todo:0,prog:0,done:0,linked:0},conf:{lines:0,readers:0},
+    repo:{committed:0,pulled:0},transcript:0,skill:{written:0,deck:0},
+    dash:{on:0,prog:{a1:0,a2:0,a3:0,b1:0,b2:0,b3:0},st:{a1:"todo",a2:"block",a3:"todo",b1:"todo",b2:"todo",b3:"todo"}},gap:1,field:0};
+  cuInit();
+  beatIdx=-1;updateBeatN();renderPhases();
+  litResult("resCtx",false);litResult("resSkill",false);
+  document.getElementById("ctxEmpty").style.display="block";
+  document.getElementById("ctxBands").style.display="none";
+  syncCommittedSkill();
+  document.getElementById("skillBadge").classList.remove("on");
+  ["ctxTickets","ctxPages","ctxTr"].forEach(id=>setText(id,"0"));
+  drawDeck(0);resetMech();hidePayoff();
+  FEED.innerHTML="";
+  document.getElementById("next").textContent="Next ▶";document.getElementById("next").disabled=false;
+  document.getElementById("play").disabled=false;setPlayLabel();
+  if(state.view==="closeup"){
+    TERM.innerHTML='<span class="ln dim">agent idle, press Next to follow it'+CURSOR+'</span>';
+    setCaption("READY","one agent, up close","The same PM as the team view, zoomed all the way in on their agent. Step through the real loop: prompt, reasoning, load skill, MCP tool calls, render, self-eval, response.");
+  }else{
+    TERM.innerHTML='<span class="ln dim">team idle, press Next to begin'+CURSOR+'</span>';
+    setCaption("READY","click Next to step through","Left: a real team, a PM with two supervisors and their people. Right: the systems they share, Jira, Confluence, a skills repo, and the PM dashboard. Step through one beat at a time, or press Play all.");
+  }
+}
+
+let raf=null,last=0;
+function loop(t){const dt=Math.min(40,t-last);last=t;state.t+=dt;drawScene();raf=requestAnimationFrame(loop);}
+function startLoop(){if(!raf){last=performance.now();raf=requestAnimationFrame(loop);}}
+
+document.getElementById("next").addEventListener("click",nextBeat);
+document.getElementById("play").addEventListener("click",playAll);
+document.getElementById("reset").addEventListener("click",()=>{resetRun();});
+document.getElementById("agentToggle").addEventListener("change",e=>{state.showAgents=e.target.checked;});
+
+/* view switch: same canvas, same camera, different scene */
+function setView(v){
+  if(state.running||state.view===v)return;
+  state.view=v;
+  document.querySelectorAll("#viewSwitch button").forEach(b=>b.classList.toggle("on",b.dataset.view===v));
+  // the agent-layer toggle only means something in the team view
+  document.querySelector(".alyr").style.display=v==="closeup"?"none":"inline-flex";
+  resetRun();
+}
+document.querySelectorAll("#viewSwitch button").forEach(b=>
+  b.addEventListener("click",()=>setView(b.dataset.view)));
+document.querySelectorAll(".speed button").forEach(b=>b.addEventListener("click",()=>{
+  state.speed=parseFloat(b.dataset.sp);
+  document.querySelectorAll(".speed button").forEach(z=>{z.style.background="transparent";z.style.color="var(--accent)";});
+  b.style.background="var(--accent)";b.style.color="var(--cream)";}));
+
+cuInit();renderPhases();updateBeatN();startLoop();
+const defSp=document.querySelector('.speed button[data-sp="1"]');
+if(defSp){defSp.style.background="var(--accent)";defSp.style.color="var(--cream)";}
+</script>
+</body>
+</html>

@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skill Builder · Czechitas</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --surface: #ffffff;
+      --border: #d4c8b0;
+      --text: #1a1814;
+      --text-muted: #666;
+      --hero-bg: #1f3a5f;
+      --hero-cream: #f5e8c8;
+      --rosie-red: #c8362a;
+      --ochre: #d4a02a;
+      --highlight-bg: #fff7e6;
+      --code-bg: #1a1814;
+      --code-text: #c8c4bc;
+
+      --font-condensed: "Impact", "Helvetica Neue Condensed Bold", "Arial Narrow", sans-serif;
+      --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", Consolas, "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ──────── HERO ──────── */
+    .hero {
+      position: relative;
+      background: var(--hero-bg);
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(245, 232, 200, 0.15) 2px, transparent 3px),
+        radial-gradient(circle at 60% 70%, rgba(245, 232, 200, 0.15) 2px, transparent 3px),
+        radial-gradient(circle at 80% 20%, rgba(245, 232, 200, 0.15) 2px, transparent 3px),
+        radial-gradient(circle at 40% 80%, rgba(245, 232, 200, 0.15) 2px, transparent 3px);
+      background-size: 60px 60px, 80px 80px, 100px 100px, 70px 70px;
+      color: var(--hero-cream);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      min-height: 150px;
+    }
+
+    .hero-figure {
+      flex-shrink: 0;
+      width: 120px;
+      height: 120px;
+    }
+
+    .hero-text { flex: 1; }
+
+    .hero-title {
+      font-family: var(--font-condensed);
+      font-size: 48px;
+      letter-spacing: 0.04em;
+      margin: 0;
+      line-height: 1;
+      color: var(--hero-cream);
+    }
+
+    .hero-ribbon {
+      height: 3px;
+      background: var(--rosie-red);
+      width: 240px;
+      margin: 8px 0;
+    }
+
+    .hero-tagline {
+      font-family: var(--font-condensed);
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      margin: 0 0 12px 0;
+      color: var(--hero-cream);
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-body);
+      font-size: 14px;
+      margin: 0;
+      color: var(--hero-cream);
+      opacity: 0.85;
+      max-width: 480px;
+    }
+
+    .hero-star {
+      position: absolute;
+      font-size: 24px;
+      color: var(--hero-cream);
+      opacity: 0.8;
+    }
+
+    .hero-star-tl { top: 16px; left: 24px; }
+    .hero-star-br { bottom: 16px; right: 24px; }
+
+    /* ──────── WORK ZONE ──────── */
+    .work-zone {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      min-height: 400px;
+    }
+
+    .col h2 {
+      font-family: var(--font-condensed);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    @media (max-width: 1100px) {
+      .work-zone {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ──────── TEST OUTPUT ──────── */
+    #test-output {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 24px;
+      white-space: pre-wrap;
+    }
+
+    /* ──────── FORM ──────── */
+    .field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 16px;
+    }
+
+    .field-label {
+      font-family: var(--font-condensed);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .field input[type="text"],
+    .field textarea {
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fdfcf8;
+      color: var(--text);
+      transition: border-color 100ms ease;
+    }
+
+    .field input[type="text"]:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--hero-bg);
+    }
+
+    .field input.invalid {
+      border-color: var(--rosie-red);
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .field-hint.error {
+      color: var(--rosie-red);
+    }
+
+    fieldset.field {
+      border: none;
+      padding: 0;
+      margin: 0 0 16px 0;
+    }
+
+    fieldset.field legend {
+      padding: 0;
+      margin-bottom: 6px;
+    }
+
+    .rule-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 100ms ease;
+    }
+
+    .rule-row:hover {
+      background: var(--bg);
+    }
+
+    .rule-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      flex-shrink: 0;
+      accent-color: var(--hero-bg);
+      cursor: pointer;
+    }
+
+    .rule-row span {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    /* CTA download button */
+    .cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      background: var(--rosie-red);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      cursor: pointer;
+      transition: background 100ms ease;
+    }
+
+    .cta:hover { background: #a82c22; }
+
+    .cta-main {
+      font-family: var(--font-condensed);
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .cta-sub {
+      font-family: var(--font-body);
+      font-size: 11px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    /* Advanced (Tier 2) */
+    .advanced {
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .advanced summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      list-style: none;
+      outline: none;
+    }
+    .advanced summary::-webkit-details-marker { display: none; }
+
+    .advanced-hint {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    .advanced[open] summary {
+      margin-bottom: 12px;
+    }
+
+    /* ──────── MARKDOWN PREVIEW ──────── */
+    .md-preview {
+      background: #fdfcf8;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px 16px 16px 32px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      position: relative;
+      min-height: 300px;
+    }
+
+    .md-section {
+      position: relative;
+    }
+
+    .md-dot {
+      position: absolute;
+      left: -20px;
+      top: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .md-dot-l1 { background: var(--hero-bg); }
+    .md-dot-l2 { background: var(--ochre); }
+    .md-dot-l3 { background: var(--rosie-red); }
+
+    .md-yaml-key { color: var(--text-muted); }
+    .md-yaml-value { color: var(--text); }
+    .md-h1 { color: var(--hero-bg); font-weight: 700; }
+    .md-bullet { color: var(--text-muted); }
+    .md-keyword { font-weight: 700; background: var(--highlight-bg); padding: 0 2px; }
+
+    .md-section-new {
+      animation: fadeInDown 200ms ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ──────── PLAYGROUND ──────── */
+    .test-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .test-label {
+      font-size: 11px;
+      font-family: var(--font-condensed);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .test-sql {
+      background: #fdfcf8;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 12px;
+      white-space: pre-wrap;
+      color: var(--text);
+    }
+
+    .test-sql .sql-trigger {
+      border-bottom: 2px solid var(--rosie-red);
+      background: var(--highlight-bg);
+    }
+
+    .test-output {
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 12px;
+      line-height: 1.5;
+    }
+
+    .test-output .out-key { color: #888; }
+    .test-output .out-value { color: var(--code-text); }
+
+    .verdict-pill {
+      display: inline-block;
+      font-family: var(--font-condensed);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .verdict-pill.pass { background: var(--hero-bg); }
+    .verdict-pill.warn { background: var(--ochre); }
+    .verdict-pill.fail { background: var(--rosie-red); }
+
+    .verdict-changed {
+      animation: pulse 300ms ease-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    /* ──────── TIER 2 ──────── */
+    .banner {
+      font-size: 12px;
+      background: var(--highlight-bg);
+      border-left: 2px solid var(--ochre);
+      padding: 6px 10px;
+      margin: 0 0 8px 0;
+      color: var(--text);
+    }
+
+    .phrase-add {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .phrase-add input { flex: 1; }
+    .phrase-add button,
+    #f-ref-add {
+      font-family: var(--font-condensed);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--hero-bg);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .trigger-list, .ref-list { display: flex; flex-direction: column; gap: 4px; }
+    .phrase-pill, .ref-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 13px;
+    }
+    .phrase-pill button, .ref-pill button {
+      background: transparent;
+      border: none;
+      color: var(--rosie-red);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .radio-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+    .radio-row input[type="radio"] {
+      accent-color: var(--hero-bg);
+      cursor: pointer;
+    }
+
+    .sub-h {
+      font-family: var(--font-condensed);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 16px 0 8px 0;
+    }
+
+    .trigger-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-bottom: 1px dotted var(--border);
+    }
+    .trigger-row .trigger-yes { color: var(--hero-bg); font-weight: 600; }
+    .trigger-row .trigger-no { color: var(--text-muted); }
+
+    .token-row {
+      display: grid;
+      grid-template-columns: 140px 60px 1fr;
+      align-items: center;
+      font-size: 12px;
+      padding: 2px 0;
+      font-family: var(--font-mono);
+    }
+    .token-bar {
+      background: var(--border);
+      height: 8px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .token-bar-fill {
+      background: var(--hero-bg);
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="hero">
+      <div class="hero-figure" aria-hidden="true">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+          <!-- Background circle (cream) -->
+          <circle cx="60" cy="60" r="58" fill="#f5e8c8"/>
+          <!-- Hair / bandana wrap (red) -->
+          <path d="M 30 32 Q 32 18 50 14 Q 70 12 84 22 Q 92 28 90 36 L 86 38 Q 80 26 64 24 Q 50 24 42 30 Q 36 34 36 40 Z" fill="#c8362a"/>
+          <!-- Bandana knot -->
+          <path d="M 84 22 L 92 18 L 96 28 L 88 30 Z" fill="#c8362a"/>
+          <!-- Bandana white dots -->
+          <circle cx="48" cy="22" r="1.6" fill="#f5e8c8"/>
+          <circle cx="60" cy="20" r="1.6" fill="#f5e8c8"/>
+          <circle cx="72" cy="22" r="1.6" fill="#f5e8c8"/>
+          <circle cx="80" cy="28" r="1.6" fill="#f5e8c8"/>
+          <!-- Face -->
+          <path d="M 38 40 Q 38 56 50 62 Q 60 66 70 62 Q 82 56 82 40 L 82 36 Q 70 34 60 34 Q 50 34 38 36 Z" fill="#f1d6b3"/>
+          <!-- Neck -->
+          <rect x="54" y="60" width="12" height="10" fill="#f1d6b3"/>
+          <!-- Shirt (navy) -->
+          <path d="M 24 110 L 28 76 Q 36 70 48 70 L 72 70 Q 84 70 92 76 L 96 110 Z" fill="#1f3a5f"/>
+          <!-- Rolled sleeve (cream) -->
+          <path d="M 88 76 Q 100 78 100 88 L 96 92 Q 90 86 86 84 Z" fill="#f5e8c8"/>
+          <!-- Arm raised, bent at elbow (skin) -->
+          <path d="M 86 84 Q 92 70 86 56 Q 84 50 78 52 Q 76 60 80 70 Q 80 78 84 84 Z" fill="#f1d6b3"/>
+          <!-- Hand / fist -->
+          <circle cx="80" cy="52" r="6" fill="#f1d6b3"/>
+          <!-- Laptop in front (dark) -->
+          <rect x="34" y="92" width="36" height="18" rx="2" fill="#1a1814"/>
+          <!-- Laptop screen highlight -->
+          <rect x="37" y="95" width="30" height="12" fill="#c8c4bc"/>
+          <!-- Code lines on screen -->
+          <rect x="40" y="98" width="14" height="1.5" fill="#1f3a5f"/>
+          <rect x="40" y="101" width="20" height="1.5" fill="#c8362a"/>
+          <rect x="40" y="104" width="10" height="1.5" fill="#1f3a5f"/>
+        </svg>
+      </div>
+      <div class="hero-text">
+        <h1 class="hero-title">SKILL BUILDER</h1>
+        <div class="hero-ribbon"></div>
+        <p class="hero-tagline">WE CAN BUILD IT.</p>
+        <p class="hero-subtitle">Klikni na pravidla vlevo — uvidíš, jak se mění chování agenta vpravo.</p>
+        <p class="hero-subtitle" style="margin-top:8px;font-size:14px;"><a href="https://ishalkin.github.io/czechitas-stack-trace/" style="color:var(--hero-cream);text-decoration:underline;">→ Stack Trace</a> — vidět, jak skill spolupracuje s ostatními vrstvami</p>
+      </div>
+      <div class="hero-star hero-star-tl" aria-hidden="true">★</div>
+      <div class="hero-star hero-star-br" aria-hidden="true">★</div>
+    </header>
+    <main class="work-zone">
+      <!-- Columns added in later tasks -->
+      <section class="col col-form">
+        <h2>Tvůj skill</h2>
+
+        <label class="field">
+          <span class="field-label">Jméno</span>
+          <input type="text" id="f-name" placeholder="my-sql-review" autocomplete="off" spellcheck="false">
+          <span class="field-hint" id="f-name-hint"></span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Popis</span>
+          <textarea id="f-description" rows="3" placeholder="Validates SQL queries before they go to dashboards. Use when user shares SQL and asks to review it."></textarea>
+          <span class="field-hint" id="f-description-hint">0 / 1024</span>
+        </label>
+
+        <fieldset class="field">
+          <legend class="field-label">Bezpečnostní pravidla</legend>
+          <div id="f-rules"></div>
+        </fieldset>
+
+        <button type="button" id="f-download" class="cta">
+          <span class="cta-main">BUILD IT ↓</span>
+          <span class="cta-sub">stáhnout SKILL.md</span>
+        </button>
+
+        <details class="advanced" id="f-advanced">
+          <summary>▾ Pokročilé ☆ <span class="advanced-hint">(můžeš přeskočit)</span></summary>
+          <div id="f-advanced-body">
+            <fieldset class="field">
+              <legend class="field-label">Spouštěcí fráze</legend>
+              <div id="f-trigger-phrases" class="trigger-list"></div>
+              <div class="phrase-add">
+                <input type="text" id="f-phrase-input" placeholder='např. "review my SQL"'>
+                <button type="button" id="f-phrase-add">+ přidat</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="field">
+              <legend class="field-label">Kontroly (procedurální)</legend>
+              <p class="banner">Tyto kontroly se zapíšou do skillu, ale nejsou simulovány v playgroundu — to je rozdíl mezi pravidly a procedurami.</p>
+              <div id="f-checks"></div>
+            </fieldset>
+
+            <fieldset class="field">
+              <legend class="field-label">Reference (Level 3)</legend>
+              <div id="f-references" class="ref-list"></div>
+              <button type="button" id="f-ref-add">+ přidat referenci</button>
+            </fieldset>
+
+            <fieldset class="field">
+              <legend class="field-label">Formát exportu</legend>
+              <label class="radio-row">
+                <input type="radio" name="export-format" value="anthropic" checked>
+                <span>Anthropic — SKILL.md (s frontmatter)</span>
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="export-format" value="copilot">
+                <span>Copilot — AGENTS.md (jen tělo)</span>
+              </label>
+            </fieldset>
+          </div>
+        </details>
+      </section>
+      <section class="col col-markdown">
+        <h2>SKILL.md</h2>
+        <div id="md-preview" class="md-preview"></div>
+      </section>
+      <section class="col col-playground">
+        <h2>Co dělá agent</h2>
+        <div id="pg-tests"></div>
+        <details class="advanced" id="pg-advanced">
+          <summary>▾ Pokročilé ☆ <span class="advanced-hint">(spouštěcí test, počet tokenů)</span></summary>
+          <div id="pg-advanced-body">
+            <div class="trigger-test" id="pg-trigger-test">
+              <h3 class="sub-h">Spustil by se skill?</h3>
+              <div id="pg-trigger-rows"></div>
+            </div>
+
+            <div class="composite-test" id="pg-composite">
+              <h3 class="sub-h">Složený test (víc pravidel najednou)</h3>
+              <div id="pg-composite-card"></div>
+            </div>
+
+            <div class="token-meter">
+              <h3 class="sub-h">Cena v tokenech (odhad)</h3>
+              <div id="pg-token-rows"></div>
+            </div>
+          </div>
+        </details>
+      </section>
+    </main>
+  </div>
+  <pre id="test-output" hidden></pre>
+  <script>
+    "use strict";
+
+    // ───────────────────────── TEST FRAMEWORK ─────────────────────────
+    const __tests = [];
+    function test(name, fn) { __tests.push({ name, fn }); }
+    function assertEqual(actual, expected, msg) {
+      const a = JSON.stringify(actual);
+      const e = JSON.stringify(expected);
+      if (a !== e) {
+        throw new Error((msg ? msg + ": " : "") + "expected " + e + " but got " + a);
+      }
+    }
+    function assertTrue(cond, msg) {
+      if (!cond) throw new Error((msg || "assertTrue failed"));
+    }
+
+    function runTests() {
+      const out = document.getElementById("test-output");
+      document.getElementById("app").hidden = true;
+      out.hidden = false;
+      let passed = 0, failed = 0;
+      const lines = [];
+      for (const t of __tests) {
+        try {
+          t.fn();
+          lines.push("✓ " + t.name);
+          passed++;
+        } catch (e) {
+          lines.push("✗ " + t.name + "\n  " + e.message);
+          failed++;
+        }
+      }
+      lines.push("");
+      if (failed === 0) {
+        lines.push("ALL TESTS PASSED (" + passed + ")");
+        out.style.color = "#1f3a5f";
+      } else {
+        lines.push(failed + " FAILED, " + passed + " passed");
+        out.style.color = "#c8362a";
+      }
+      out.textContent = lines.join("\n");
+    }
+
+    // ───────────────────────── DATA ─────────────────────────
+    const SEVERITY_RANK = { pass: 0, warn: 1, fail: 2 };
+
+    const RULES = [
+      {
+        id: "no_destructive",
+        label_cs: "Odmítej DROP / DELETE / INSERT / UPDATE",
+        markdown_text: "Refuse all destructive operations (DROP, DELETE, INSERT, UPDATE, TRUNCATE, ALTER, MERGE).",
+        tag: "NO_DESTRUCTIVE",
+        severity: "fail",
+        highlight_regex: /\b(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|MERGE)\b/gi,
+        keyword_in_markdown: "DROP",
+      },
+      {
+        id: "no_old_tables",
+        label_cs: "Nepoužívej tabulky _OLD / _LEGACY / _BACKUP",
+        markdown_text: "Avoid deprecated tables ending in _OLD, _LEGACY, or _BACKUP. Suggest the current alternative.",
+        tag: "NO_OLD_TABLES",
+        severity: "warn",
+        highlight_regex: /\b\w+_(OLD|LEGACY|BACKUP)\b/gi,
+        keyword_in_markdown: "_OLD",
+      },
+      {
+        id: "prefer_clean_lookup",
+        label_cs: "Preferuj COUNTRY před COUNTRY_DIRTYDATA",
+        markdown_text: "When joining country data, prefer the clean COUNTRY table over COUNTRY_DIRTYDATA (which contains duplicates).",
+        tag: "PREFER_CLEAN_LOOKUP",
+        severity: "warn",
+        highlight_regex: /\bCOUNTRY_DIRTYDATA\b/gi,
+        keyword_in_markdown: "COUNTRY_DIRTYDATA",
+      },
+      {
+        id: "big_scan",
+        label_cs: "Varuj při skenech přes 1M řádků bez WHERE",
+        markdown_text: "Warn when a query scans a table over 1M rows without a WHERE filter on a date or partition column.",
+        tag: "BIG_SCAN",
+        severity: "warn",
+        highlight_regex: /\bSELECT\b[^;]*\bFROM\b/gi,
+        keyword_in_markdown: "1M",
+      },
+    ];
+
+    const TESTS = [
+      {
+        id: "drop_table",
+        tier: 1,
+        sql: "DROP TABLE teror;",
+        label: "Destructive: DROP TABLE",
+        triggers: ["NO_DESTRUCTIVE"],
+        evidence: "query contains a destructive statement",
+        next_step: "request a read-only version of this query",
+      },
+      {
+        id: "old_table",
+        tier: 1,
+        sql: "SELECT region_txt, iyear, COUNT(*) AS attacks\nFROM TEROR2_OLD\nWHERE iyear >= 2018\nGROUP BY 1, 2;",
+        label: "Deprecated table: TEROR2_OLD",
+        triggers: ["NO_OLD_TABLES"],
+        evidence: "TEROR2_OLD is deprecated; current table is TEROR",
+        next_step: "replace TEROR2_OLD with TEROR",
+      },
+      {
+        id: "dirty_country",
+        tier: 1,
+        sql: "SELECT c.country_txt, COUNT(*)\nFROM teror t\nJOIN COUNTRY_DIRTYDATA c\n  ON t.country = c.country_id\nGROUP BY 1;",
+        label: "Dirty lookup: COUNTRY_DIRTYDATA",
+        triggers: ["PREFER_CLEAN_LOOKUP"],
+        evidence: "COUNTRY_DIRTYDATA has 408 rows with duplicates; COUNTRY has 204 clean rows",
+        next_step: "join against COUNTRY instead of COUNTRY_DIRTYDATA",
+      },
+      {
+        id: "clean_query",
+        tier: 1,
+        sql: "SELECT region_txt, COUNT(*) AS attacks\nFROM teror\nWHERE iyear >= 2018\nGROUP BY 1\nORDER BY attacks DESC;",
+        label: "Clean query",
+        triggers: [],
+        evidence: "no destructive ops, no deprecated tables, clean joins",
+        next_step: "ship it",
+      },
+      {
+        id: "composite",
+        tier: 2,
+        sql: "DROP TABLE TEROR2_OLD;",
+        label: "Composite: destructive AND deprecated",
+        triggers: ["NO_DESTRUCTIVE", "NO_OLD_TABLES"],
+        evidence: "destructive operation on a deprecated table",
+        next_step: "do not run; if you need to drop, drop the current TEROR table only after confirming",
+      },
+    ];
+
+    const CHECKS = [
+      { id: "schema_match", label: "Schema match" },
+      { id: "sentinel_values", label: "Sentinel values" },
+      { id: "null_handling", label: "Null handling" },
+      { id: "grain_clarity", label: "Grain clarity" },
+    ];
+
+    // ───────────────────────── PURE LOGIC ─────────────────────────
+    function evaluate(test, activeRules) {
+      const triggered = activeRules.filter(r => test.triggers.includes(r.tag));
+      let verdict = "pass";
+      for (const r of triggered) {
+        if (SEVERITY_RANK[r.severity] > SEVERITY_RANK[verdict]) {
+          verdict = r.severity;
+        }
+      }
+      return { verdict, triggered };
+    }
+
+    function validateName(name) {
+      if (typeof name !== "string" || name.length === 0) {
+        return { ok: false, reason: "empty" };
+      }
+      // kebab-case: lowercase letters/digits, hyphens between, no leading/trailing hyphen
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+        return { ok: false, reason: "not_kebab_case" };
+      }
+      return { ok: true };
+    }
+
+    function generateMarkdown(state) {
+      const lines = [];
+
+      // Frontmatter
+      lines.push("---");
+      lines.push("name: " + (state.name || ""));
+      let desc = state.description || "";
+      if (state.triggerPhrases && state.triggerPhrases.length > 0) {
+        const quoted = state.triggerPhrases.map(p => '"' + p + '"').join(", ");
+        desc = desc + (desc.length > 0 ? " " : "") + "Use when user says: " + quoted + ".";
+      }
+      lines.push("description: " + desc);
+      lines.push("---");
+      lines.push("");
+
+      // When to use
+      lines.push("# When to use");
+      lines.push("");
+      lines.push("Use this skill whenever the user shares SQL for review or asks whether a query is OK for a dashboard.");
+      lines.push("");
+
+      // Safety rules — only if any active
+      const activeRules = RULES.filter(r => state.activeRuleIds.includes(r.id));
+      if (activeRules.length > 0) {
+        lines.push("# Safety rules");
+        lines.push("");
+        for (const r of activeRules) {
+          lines.push("- " + r.markdown_text);
+        }
+        lines.push("");
+      }
+
+      // Checks — only if any active
+      const activeChecks = CHECKS.filter(c => state.activeCheckIds.includes(c.id));
+      if (activeChecks.length > 0) {
+        lines.push("# Checks to perform");
+        lines.push("");
+        for (const c of activeChecks) {
+          lines.push("- " + c.label);
+        }
+        lines.push("");
+      }
+
+      // Output format — always present
+      lines.push("# Output format");
+      lines.push("");
+      lines.push("verdict: pass | warn | fail");
+      lines.push("triggered: [list of rule labels]");
+      lines.push("evidence: [concrete facts]");
+      lines.push("next_step: [one action]");
+      lines.push("");
+
+      // References — only if any
+      if (state.references && state.references.length > 0) {
+        lines.push("# References");
+        lines.push("");
+        for (const ref of state.references) {
+          lines.push("- references/" + ref);
+        }
+        lines.push("");
+      }
+
+      return lines.join("\n");
+    }
+
+    const STOP_WORDS = new Set([
+      "the", "a", "an", "is", "are", "was", "were", "be", "been",
+      "to", "of", "in", "on", "at", "by", "for", "with", "as",
+      "and", "or", "but", "this", "that", "these", "those",
+      "i", "you", "we", "they", "it", "me", "my", "your", "our",
+      "do", "does", "did", "have", "has", "had",
+      "can", "could", "should", "would", "may", "might",
+      "what", "when", "where", "which", "who", "how", "why",
+    ]);
+
+    function tokenize(text) {
+      return (text || "")
+        .toLowerCase()
+        .split(/[^a-z0-9_]+/)
+        .filter(w => w.length > 1 && !STOP_WORDS.has(w));
+    }
+
+    function triggeringMatch(phrase, description) {
+      const phraseWords = new Set(tokenize(phrase));
+      const descWords = new Set(tokenize(description));
+      for (const w of phraseWords) {
+        if (descWords.has(w)) return true;
+      }
+      return false;
+    }
+
+    function estimateTokens(text) {
+      if (!text) return 0;
+      return Math.floor(text.length / 4);
+    }
+
+    // ───────────────────────── STATE ─────────────────────────
+    const state = {
+      name: "",
+      description: "",
+      activeRuleIds: [],
+      triggerPhrases: [],
+      activeCheckIds: [],
+      references: [],
+      exportFormat: "anthropic",
+    };
+
+    function readForm() {
+      const name = document.getElementById("f-name").value;
+      const description = document.getElementById("f-description").value;
+      const activeRuleIds = Array.from(
+        document.querySelectorAll('#f-rules input[type="checkbox"]:checked')
+      ).map(el => el.value);
+      return { name, description, activeRuleIds };
+    }
+
+    // ───────────────────────── RENDER: FORM ─────────────────────────
+    function renderRulesCheckboxes() {
+      const container = document.getElementById("f-rules");
+      container.innerHTML = RULES.map(r => `
+        <label class="rule-row">
+          <input type="checkbox" value="${r.id}" data-rule-id="${r.id}">
+          <span>${escapeHtml(r.label_cs)}</span>
+        </label>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderNameValidation() {
+      const input = document.getElementById("f-name");
+      const hint = document.getElementById("f-name-hint");
+      const v = validateName(input.value);
+      if (input.value === "") {
+        input.classList.remove("invalid");
+        hint.textContent = "";
+        hint.classList.remove("error");
+        return;
+      }
+      if (!v.ok) {
+        input.classList.add("invalid");
+        hint.textContent = "kebab-case prosím (např. my-sql-review)";
+        hint.classList.add("error");
+      } else {
+        input.classList.remove("invalid");
+        hint.textContent = "✓";
+        hint.classList.remove("error");
+      }
+    }
+
+    function renderDescriptionCounter() {
+      const input = document.getElementById("f-description");
+      const hint = document.getElementById("f-description-hint");
+      const len = input.value.length;
+      hint.textContent = len + " / 1024";
+      hint.classList.toggle("error", len > 1024);
+    }
+
+    // ───────────────────────── DOWNLOAD ─────────────────────────
+    function downloadFile(filename, content, mime) {
+      const blob = new Blob([content], { type: mime || "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function handleDownload() {
+      const md = generateMarkdown(state);
+      // Tier-1 default: Anthropic format → SKILL.md
+      // (Tier-2 may switch to AGENTS.md — handled in Task 11)
+      if (state.exportFormat === "copilot") {
+        // Strip frontmatter for AGENTS.md
+        const body = md.replace(/^---\n[\s\S]*?\n---\n\n?/, "");
+        downloadFile("AGENTS.md", body, "text/markdown;charset=utf-8");
+      } else {
+        downloadFile("SKILL.md", md, "text/markdown;charset=utf-8");
+      }
+    }
+
+    // ───────────────────────── RENDER: MARKDOWN ─────────────────────────
+    function renderMarkdown(state) {
+      const md = generateMarkdown(state);
+      const preview = document.getElementById("md-preview");
+
+      // Split into sections by leading "# " or by the frontmatter delimiter
+      // We render each section as a separate <div class="md-section"> with a level dot.
+      const sections = parseMarkdownSections(md);
+      const html = sections.map(s => renderMarkdownSection(s, state)).join("");
+
+      preview.innerHTML = html;
+    }
+
+    function parseMarkdownSections(md) {
+      // Sections: frontmatter (level 1), each # heading (level 2), references (level 3)
+      const out = [];
+      const lines = md.split("\n");
+      let i = 0;
+
+      // Frontmatter
+      if (lines[i] === "---") {
+        let end = i + 1;
+        while (end < lines.length && lines[end] !== "---") end++;
+        out.push({
+          level: 1,
+          lines: lines.slice(i, end + 1),
+        });
+        i = end + 1;
+        while (i < lines.length && lines[i] === "") i++;
+      }
+
+      // Body sections
+      while (i < lines.length) {
+        if (lines[i].startsWith("# ")) {
+          const heading = lines[i];
+          let end = i + 1;
+          while (end < lines.length && !lines[end].startsWith("# ")) end++;
+          const level = heading === "# References" ? 3 : 2;
+          out.push({
+            level,
+            lines: lines.slice(i, end),
+          });
+          i = end;
+        } else {
+          i++;
+        }
+      }
+
+      return out;
+    }
+
+    function renderMarkdownSection(section, state) {
+      const dotClass = "md-dot-l" + section.level;
+      const activeRules = RULES.filter(r => state.activeRuleIds.includes(r.id));
+      const html = section.lines.map(line => formatMarkdownLine(line, activeRules)).join("\n");
+      return `<div class="md-section"><span class="md-dot ${dotClass}"></span>${html}</div>`;
+    }
+
+    function formatMarkdownLine(line, activeRules) {
+      const escaped = escapeHtml(line);
+
+      if (line.startsWith("# ")) {
+        return `<span class="md-h1">${escaped}</span>`;
+      }
+      if (line.startsWith("---")) {
+        return `<span class="md-yaml-key">${escaped}</span>`;
+      }
+      if (line.match(/^[a-z_]+:/i)) {
+        // YAML key: value
+        const colon = line.indexOf(":");
+        const key = escapeHtml(line.slice(0, colon + 1));
+        const val = escapeHtml(line.slice(colon + 1));
+        return `<span class="md-yaml-key">${key}</span><span class="md-yaml-value">${val}</span>`;
+      }
+      if (line.startsWith("- ")) {
+        // Bullet — apply keyword highlighting per active rule
+        let highlighted = escaped;
+        for (const r of activeRules) {
+          const keyword = escapeHtml(r.keyword_in_markdown);
+          // Bold the keyword if present in this line
+          if (highlighted.includes(keyword)) {
+            const re = new RegExp("(" + keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "g");
+            highlighted = highlighted.replace(re, '<span class="md-keyword">$1</span>');
+          }
+        }
+        return `<span class="md-bullet">${highlighted}</span>`;
+      }
+      return escaped;
+    }
+
+    // ───────────────────────── RENDER: PLAYGROUND ─────────────────────────
+    const _lastVerdicts = {};
+
+    function renderPlayground(state) {
+      const container = document.getElementById("pg-tests");
+      const activeRules = RULES.filter(r => state.activeRuleIds.includes(r.id));
+      const visibleTests = TESTS.filter(t => t.tier === 1);
+      container.innerHTML = visibleTests.map(t => renderTestCard(t, activeRules)).join("");
+
+      // Pulse animation: compare verdicts to last render
+      for (const t of visibleTests) {
+        const result = evaluate(t, activeRules);
+        const lastV = _lastVerdicts[t.id];
+        if (lastV !== undefined && lastV !== result.verdict) {
+          const card = container.querySelector(`[data-test-id="${t.id}"] .verdict-pill`);
+          if (card) {
+            card.classList.add("verdict-changed");
+            setTimeout(() => card.classList.remove("verdict-changed"), 300);
+          }
+        }
+        _lastVerdicts[t.id] = result.verdict;
+      }
+    }
+
+    function renderTestCard(test, activeRules) {
+      const result = evaluate(test, activeRules);
+      const sqlHtml = highlightSql(test.sql, result.triggered);
+      const triggeredList = result.triggered.length > 0
+        ? result.triggered.map(r => "  - " + r.markdown_text.split(".")[0]).join("\n")
+        : "  (none)";
+      return `
+        <div class="test-card" data-test-id="${test.id}">
+          <div class="test-label">${escapeHtml(test.label)}</div>
+          <div class="test-sql">${sqlHtml}</div>
+          <div class="test-output"><span class="out-key">verdict:</span> <span class="verdict-pill ${result.verdict}">${result.verdict}</span>
+<span class="out-key">triggered:</span>
+<span class="out-value">${escapeHtml(triggeredList)}</span>
+<span class="out-key">evidence:</span>
+<span class="out-value">  - ${escapeHtml(test.evidence)}</span>
+<span class="out-key">next_step:</span>
+<span class="out-value">  - ${escapeHtml(test.next_step)}</span></div>
+        </div>
+      `;
+    }
+
+    function highlightSql(sql, triggeredRules) {
+      let html = escapeHtml(sql);
+      // Apply each triggered rule's regex with a sql-trigger wrapper
+      for (const r of triggeredRules) {
+        const re = new RegExp(r.highlight_regex.source, r.highlight_regex.flags);
+        html = html.replace(re, m => `<span class="sql-trigger">${m}</span>`);
+      }
+      return html;
+    }
+
+    // ───────────────────────── TIER 2: STATE SYNC ─────────────────────────
+    function syncStateFromFormTier2() {
+      const checkInputs = document.querySelectorAll('#f-checks input[type="checkbox"]:checked');
+      state.activeCheckIds = Array.from(checkInputs).map(el => el.value);
+      const formatRadio = document.querySelector('input[name="export-format"]:checked');
+      state.exportFormat = formatRadio ? formatRadio.value : "anthropic";
+      // triggerPhrases and references are managed by their own add/remove handlers
+    }
+
+    // ───────────────────────── TIER 2: RENDER FORM ─────────────────────────
+    function renderTriggerPhrases() {
+      const container = document.getElementById("f-trigger-phrases");
+      container.innerHTML = state.triggerPhrases.map((p, i) => `
+        <div class="phrase-pill"><span>${escapeHtml(p)}</span><button type="button" data-phrase-i="${i}">×</button></div>
+      `).join("");
+    }
+
+    function renderChecksCheckboxes() {
+      const container = document.getElementById("f-checks");
+      container.innerHTML = CHECKS.map(c => `
+        <label class="rule-row">
+          <input type="checkbox" value="${c.id}">
+          <span>${escapeHtml(c.label)}</span>
+        </label>
+      `).join("");
+    }
+
+    function renderReferences() {
+      const container = document.getElementById("f-references");
+      if (state.references.length === 0) {
+        container.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">žádné reference</div>';
+        return;
+      }
+      container.innerHTML = state.references.map((ref, i) => `
+        <div class="ref-pill"><span>references/${escapeHtml(ref)}</span><button type="button" data-ref-i="${i}">×</button></div>
+      `).join("");
+    }
+
+    // ───────────────────────── TIER 2: RENDER PLAYGROUND ─────────────────────────
+    const FALLBACK_PHRASES = ["jaké je počasí?", "napiš mi Python kód", "vytvoř spreadsheet"];
+
+    function renderTriggeringTest(state) {
+      const container = document.getElementById("pg-trigger-rows");
+      const haystack = state.description + " " + state.triggerPhrases.join(" ");
+      const candidates = [...state.triggerPhrases, ...FALLBACK_PHRASES];
+      container.innerHTML = candidates.map(p => {
+        const matches = triggeringMatch(p, haystack);
+        return `<div class="trigger-row">
+          <span>"${escapeHtml(p)}"</span>
+          <span class="${matches ? 'trigger-yes' : 'trigger-no'}">${matches ? '✓ spustí se' : '✗ nespustí'}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function renderCompositeTest(state) {
+      const container = document.getElementById("pg-composite-card");
+      const composite = TESTS.find(t => t.tier === 2);
+      const activeRules = RULES.filter(r => state.activeRuleIds.includes(r.id));
+      container.innerHTML = renderTestCard(composite, activeRules);
+    }
+
+    function renderTokenMeter(state) {
+      const md = generateMarkdown(state);
+      const frontmatterMatch = md.match(/^---\n[\s\S]*?\n---\n/);
+      const frontmatter = frontmatterMatch ? frontmatterMatch[0] : "";
+      const body = md.slice(frontmatter.length);
+      const refsTokens = state.references.length > 0 ? estimateTokens(state.references.join("\n")) : 0;
+
+      const t1 = estimateTokens(frontmatter);
+      const t2 = estimateTokens(body);
+      const max = Math.max(t1, t2, refsTokens, 1);
+
+      const rows = [
+        { label: "Vždy nahrané", val: t1 },
+        { label: "Při spuštění", val: t2 },
+        { label: "Z referencí", val: refsTokens },
+      ];
+      document.getElementById("pg-token-rows").innerHTML = rows.map(r => `
+        <div class="token-row">
+          <span>${r.label}</span>
+          <span>${r.val}</span>
+          <span class="token-bar"><span class="token-bar-fill" style="width:${(r.val / max) * 100}%"></span></span>
+        </div>
+      `).join("");
+    }
+
+    // ───────────────────────── RENDER ORCHESTRATOR ─────────────────────────
+    function syncStateFromForm() {
+      state.name = document.getElementById("f-name").value;
+      state.description = document.getElementById("f-description").value;
+      state.activeRuleIds = Array.from(
+        document.querySelectorAll('#f-rules input[type="checkbox"]:checked')
+      ).map(el => el.value);
+      // Tier 2 sync added in Task 11
+    }
+
+    function render() {
+      syncStateFromForm();
+      syncStateFromFormTier2();
+      renderNameValidation();
+      renderDescriptionCounter();
+      renderMarkdown(state);
+      renderPlayground(state);
+      renderTriggeringTest(state);
+      renderCompositeTest(state);
+      renderTokenMeter(state);
+    }
+
+    function init() {
+      renderRulesCheckboxes();
+      renderChecksCheckboxes();
+      renderTriggerPhrases();
+      renderReferences();
+
+      document.getElementById("f-name").addEventListener("input", render);
+      document.getElementById("f-description").addEventListener("input", render);
+      document.getElementById("f-rules").addEventListener("change", render);
+      document.getElementById("f-checks").addEventListener("change", render);
+      document.querySelectorAll('input[name="export-format"]').forEach(el => {
+        el.addEventListener("change", render);
+      });
+      document.getElementById("f-download").addEventListener("click", handleDownload);
+
+      // Trigger phrases add/remove
+      document.getElementById("f-phrase-add").addEventListener("click", () => {
+        const input = document.getElementById("f-phrase-input");
+        const value = input.value.trim();
+        if (value) {
+          state.triggerPhrases.push(value);
+          input.value = "";
+          renderTriggerPhrases();
+          render();
+        }
+      });
+      document.getElementById("f-phrase-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("f-phrase-add").click();
+        }
+      });
+      document.getElementById("f-trigger-phrases").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-phrase-i]");
+        if (btn) {
+          const i = parseInt(btn.dataset.phraseI, 10);
+          state.triggerPhrases.splice(i, 1);
+          renderTriggerPhrases();
+          render();
+        }
+      });
+
+      // References add/remove
+      document.getElementById("f-ref-add").addEventListener("click", () => {
+        const name = "reference-" + (state.references.length + 1) + ".md";
+        state.references.push(name);
+        renderReferences();
+        render();
+      });
+      document.getElementById("f-references").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-ref-i]");
+        if (btn) {
+          const i = parseInt(btn.dataset.refI, 10);
+          state.references.splice(i, 1);
+          renderReferences();
+          render();
+        }
+      });
+
+      render();
+    }
+
+    // ───────────────────────── SELF-TEST: framework sanity ─────────────────────────
+    test("framework: assertEqual passes on equal values", () => {
+      assertEqual(1 + 1, 2);
+    });
+
+    test("framework: assertEqual throws on unequal", () => {
+      let threw = false;
+      try { assertEqual(1, 2); } catch (e) { threw = true; }
+      assertTrue(threw, "should have thrown");
+    });
+
+    // ───────────────────────── DATA TESTS ─────────────────────────
+    test("data: RULES has 4 rules with required fields", () => {
+      assertEqual(RULES.length, 4);
+      for (const r of RULES) {
+        assertTrue(typeof r.id === "string", "id missing");
+        assertTrue(typeof r.label_cs === "string", "label_cs missing");
+        assertTrue(typeof r.markdown_text === "string", "markdown_text missing");
+        assertTrue(typeof r.tag === "string", "tag missing");
+        assertTrue(["pass", "warn", "fail"].includes(r.severity), "severity invalid");
+        assertTrue(r.highlight_regex instanceof RegExp, "highlight_regex missing");
+      }
+    });
+
+    test("data: RULES tags are NO_DESTRUCTIVE/NO_OLD_TABLES/PREFER_CLEAN_LOOKUP/BIG_SCAN", () => {
+      const tags = RULES.map(r => r.tag).sort();
+      assertEqual(tags, ["BIG_SCAN", "NO_DESTRUCTIVE", "NO_OLD_TABLES", "PREFER_CLEAN_LOOKUP"]);
+    });
+
+    test("data: TESTS has 5 tests (4 tier-1 + 1 composite)", () => {
+      assertEqual(TESTS.length, 5);
+    });
+
+    test("data: TESTS tier-1 order is fail-first then pass last", () => {
+      // Per spec §7.3: drama-first ordering of the 4 visible tests
+      const visible = TESTS.filter(t => t.tier === 1);
+      assertEqual(visible.length, 4);
+      assertEqual(visible[0].triggers, ["NO_DESTRUCTIVE"]);
+      assertEqual(visible[1].triggers, ["NO_OLD_TABLES"]);
+      assertEqual(visible[2].triggers, ["PREFER_CLEAN_LOOKUP"]);
+      assertEqual(visible[3].triggers, []);
+    });
+
+    test("data: composite test triggers two tags", () => {
+      const composite = TESTS.find(t => t.tier === 2);
+      assertEqual(composite.triggers.sort(), ["NO_DESTRUCTIVE", "NO_OLD_TABLES"]);
+    });
+
+    test("data: SEVERITY_RANK orders pass < warn < fail", () => {
+      assertTrue(SEVERITY_RANK.pass < SEVERITY_RANK.warn);
+      assertTrue(SEVERITY_RANK.warn < SEVERITY_RANK.fail);
+    });
+
+    // ───────────────────────── EVALUATE TESTS ─────────────────────────
+    test("evaluate: empty rules → verdict pass for any test", () => {
+      for (const t of TESTS) {
+        const result = evaluate(t, []);
+        assertEqual(result.verdict, "pass");
+        assertEqual(result.triggered, []);
+      }
+    });
+
+    test("evaluate: DROP test with NO_DESTRUCTIVE active → fail", () => {
+      const dropTest = TESTS.find(t => t.id === "drop_table");
+      const noDestructive = RULES.find(r => r.tag === "NO_DESTRUCTIVE");
+      const result = evaluate(dropTest, [noDestructive]);
+      assertEqual(result.verdict, "fail");
+      assertEqual(result.triggered.length, 1);
+      assertEqual(result.triggered[0].tag, "NO_DESTRUCTIVE");
+    });
+
+    test("evaluate: TEROR2_OLD test with NO_OLD_TABLES active → warn", () => {
+      const oldTest = TESTS.find(t => t.id === "old_table");
+      const noOld = RULES.find(r => r.tag === "NO_OLD_TABLES");
+      const result = evaluate(oldTest, [noOld]);
+      assertEqual(result.verdict, "warn");
+      assertEqual(result.triggered.length, 1);
+    });
+
+    test("evaluate: clean query with all rules active → pass", () => {
+      const cleanTest = TESTS.find(t => t.id === "clean_query");
+      const result = evaluate(cleanTest, RULES);
+      assertEqual(result.verdict, "pass");
+      assertEqual(result.triggered, []);
+    });
+
+    test("evaluate: composite test with both rules active → fail (max severity)", () => {
+      const composite = TESTS.find(t => t.id === "composite");
+      const noDestructive = RULES.find(r => r.tag === "NO_DESTRUCTIVE");
+      const noOld = RULES.find(r => r.tag === "NO_OLD_TABLES");
+      const result = evaluate(composite, [noDestructive, noOld]);
+      assertEqual(result.verdict, "fail");
+      assertEqual(result.triggered.length, 2);
+    });
+
+    test("evaluate: composite with only warn rule active → warn", () => {
+      const composite = TESTS.find(t => t.id === "composite");
+      const noOld = RULES.find(r => r.tag === "NO_OLD_TABLES");
+      const result = evaluate(composite, [noOld]);
+      assertEqual(result.verdict, "warn");
+      assertEqual(result.triggered.length, 1);
+    });
+
+    test("evaluate: irrelevant rule active does not trigger", () => {
+      const dropTest = TESTS.find(t => t.id === "drop_table");
+      const noOld = RULES.find(r => r.tag === "NO_OLD_TABLES");
+      const result = evaluate(dropTest, [noOld]);
+      assertEqual(result.verdict, "pass");
+      assertEqual(result.triggered, []);
+    });
+
+    // ───────────────────────── VALIDATE NAME TESTS ─────────────────────────
+    test("validateName: kebab-case is valid", () => {
+      assertEqual(validateName("my-sql-review"), { ok: true });
+    });
+
+    test("validateName: single word is valid", () => {
+      assertEqual(validateName("review"), { ok: true });
+    });
+
+    test("validateName: empty is invalid", () => {
+      const r = validateName("");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: spaces are invalid", () => {
+      const r = validateName("my skill");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: capital letters are invalid", () => {
+      const r = validateName("MySkill");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: underscores are invalid", () => {
+      const r = validateName("my_skill");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: leading hyphen is invalid", () => {
+      const r = validateName("-skill");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: trailing hyphen is invalid", () => {
+      const r = validateName("skill-");
+      assertEqual(r.ok, false);
+    });
+
+    test("validateName: digits are valid", () => {
+      assertEqual(validateName("v2-review"), { ok: true });
+    });
+
+    // ───────────────────────── GENERATE MARKDOWN TESTS ─────────────────────────
+    test("generateMarkdown: empty state produces minimal valid skill", () => {
+      const md = generateMarkdown({
+        name: "",
+        description: "",
+        activeRuleIds: [],
+        triggerPhrases: [],
+        activeCheckIds: [],
+        references: [],
+      });
+      assertTrue(md.startsWith("---\n"), "starts with frontmatter delimiter");
+      assertTrue(md.includes("name: \n"), "has empty name field");
+      assertTrue(md.includes("description: \n"), "has empty description field");
+      assertTrue(md.includes("# When to use"), "has when-to-use section");
+      assertTrue(md.includes("# Output format"), "has output format section");
+      assertTrue(!md.includes("# Safety rules"), "no safety section when no rules");
+      assertTrue(!md.includes("# Checks to perform"), "no checks section when none");
+      assertTrue(!md.includes("# References"), "no references section when none");
+    });
+
+    test("generateMarkdown: name and description appear in frontmatter", () => {
+      const md = generateMarkdown({
+        name: "my-review",
+        description: "Validates SQL.",
+        activeRuleIds: [],
+        triggerPhrases: [],
+        activeCheckIds: [],
+        references: [],
+      });
+      assertTrue(md.includes("name: my-review\n"));
+      assertTrue(md.includes("description: Validates SQL.\n"));
+    });
+
+    test("generateMarkdown: trigger phrases append to description", () => {
+      const md = generateMarkdown({
+        name: "x",
+        description: "Validates SQL.",
+        activeRuleIds: [],
+        triggerPhrases: ["review this query", "is this SQL ok"],
+        activeCheckIds: [],
+        references: [],
+      });
+      assertTrue(
+        md.includes('description: Validates SQL. Use when user says: "review this query", "is this SQL ok".\n'),
+        "expected appended trigger phrases, got: " + md
+      );
+    });
+
+    test("generateMarkdown: active rules appear under # Safety rules", () => {
+      const md = generateMarkdown({
+        name: "x",
+        description: "",
+        activeRuleIds: ["no_destructive", "no_old_tables"],
+        triggerPhrases: [],
+        activeCheckIds: [],
+        references: [],
+      });
+      assertTrue(md.includes("# Safety rules"), "has safety section");
+      assertTrue(md.includes("- Refuse all destructive operations"));
+      assertTrue(md.includes("- Avoid deprecated tables"));
+    });
+
+    test("generateMarkdown: checks section appears only when at least one check active", () => {
+      const md1 = generateMarkdown({
+        name: "x", description: "", activeRuleIds: [],
+        triggerPhrases: [], activeCheckIds: [], references: [],
+      });
+      assertTrue(!md1.includes("# Checks to perform"));
+
+      const md2 = generateMarkdown({
+        name: "x", description: "", activeRuleIds: [],
+        triggerPhrases: [], activeCheckIds: ["schema_match"], references: [],
+      });
+      assertTrue(md2.includes("# Checks to perform"));
+      assertTrue(md2.includes("- Schema match"));
+    });
+
+    test("generateMarkdown: references section appears only when references exist", () => {
+      const md1 = generateMarkdown({
+        name: "x", description: "", activeRuleIds: [],
+        triggerPhrases: [], activeCheckIds: [], references: [],
+      });
+      assertTrue(!md1.includes("# References"));
+
+      const md2 = generateMarkdown({
+        name: "x", description: "", activeRuleIds: [],
+        triggerPhrases: [], activeCheckIds: [], references: ["sql-antipatterns.md"],
+      });
+      assertTrue(md2.includes("# References"));
+      assertTrue(md2.includes("- references/sql-antipatterns.md"));
+    });
+
+    test("generateMarkdown: output format section is always present and fixed", () => {
+      const md = generateMarkdown({
+        name: "x", description: "", activeRuleIds: [],
+        triggerPhrases: [], activeCheckIds: [], references: [],
+      });
+      assertTrue(md.includes("verdict: pass | warn | fail"));
+      assertTrue(md.includes("triggered: [list of rule labels]"));
+      assertTrue(md.includes("evidence: [concrete facts]"));
+      assertTrue(md.includes("next_step: [one action]"));
+    });
+
+    // ───────────────────────── TRIGGERING MATCH TESTS ─────────────────────────
+    test("triggeringMatch: phrase with shared keyword matches", () => {
+      // description mentions "SQL", phrase says "review my SQL"
+      assertEqual(
+        triggeringMatch("review my SQL", "Validates SQL queries before dashboards."),
+        true
+      );
+    });
+
+    test("triggeringMatch: phrase with no shared keywords does not match", () => {
+      assertEqual(
+        triggeringMatch("what's the weather?", "Validates SQL queries before dashboards."),
+        false
+      );
+    });
+
+    test("triggeringMatch: case-insensitive", () => {
+      assertEqual(
+        triggeringMatch("REVIEW my sql", "Validates SQL queries before dashboards."),
+        true
+      );
+    });
+
+    test("triggeringMatch: empty description never matches", () => {
+      assertEqual(triggeringMatch("review my SQL", ""), false);
+    });
+
+    test("triggeringMatch: stop words alone do not match", () => {
+      // "the", "is", "a" are stopwords — should not count as overlap
+      assertEqual(triggeringMatch("is the a", "Validates SQL queries."), false);
+    });
+
+    // ───────────────────────── ESTIMATE TOKENS TESTS ─────────────────────────
+    test("estimateTokens: empty string is 0", () => {
+      assertEqual(estimateTokens(""), 0);
+    });
+
+    test("estimateTokens: 4 chars is ~1 token", () => {
+      assertEqual(estimateTokens("abcd"), 1);
+    });
+
+    test("estimateTokens: 100 chars is ~25 tokens", () => {
+      assertEqual(estimateTokens("a".repeat(100)), 25);
+    });
+
+    // ───────────────────────── ENTRY POINT ─────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(location.search);
+      if (params.get("test") === "1") {
+        runTests();
+      } else {
+        init();
+      }
+    });
+  </script>
+</body>
+</html>

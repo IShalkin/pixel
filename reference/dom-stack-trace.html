@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pět vrstev v jednom dotazu · Czechitas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fdfaf5;
+    --fg: #1a1814;
+    --accent: #d4452f;
+    --muted: #8a8378;
+    --muted-bg: #f0ebe1;
+    --success: #3d7a3d;
+    --warn: #b8860b;
+    --rule: #1f3a5f;
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --serif: 'Instrument Serif', Georgia, serif;
+    --body: 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--cream);
+    color: var(--fg);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ───── Layout ───── */
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 32px 48px;
+  }
+
+  /* ───── Hero ───── */
+  .hero {
+    border-bottom: 1px solid var(--muted-bg);
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 1.1;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .hero h1 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    margin: 0 0 16px;
+    max-width: 720px;
+  }
+  .hero-links {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-size: 14px;
+  }
+  .hero-links a {
+    border: 1px solid var(--muted-bg);
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--fg);
+  }
+  .hero-links a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* ───── Main grid ───── */
+  .main {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+  }
+  .controls {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    background: var(--cream);
+    padding: 16px;
+    border: 1px solid var(--muted-bg);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .controls h3 {
+    font-family: var(--display);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
+  .controls h3:not(:first-child) { margin-top: 16px; }
+  .controls label {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 4px 0;
+    cursor: pointer;
+  }
+  .controls input[type=checkbox] {
+    margin-top: 3px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+  .controls label.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+
+  /* ───── Chat panel ───── */
+  .chat {
+    border: 1px solid var(--muted-bg);
+    border-radius: 6px;
+    background: white;
+    overflow: hidden;
+  }
+  .chat-header {
+    background: var(--muted-bg);
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--muted-bg);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+  }
+  .chat-header::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .chat-body {
+    padding: 16px;
+    min-height: 220px;
+  }
+  .chat-msg {
+    margin: 0 0 12px;
+  }
+  .chat-msg.user {
+    background: var(--muted-bg);
+    padding: 10px 14px;
+    border-radius: 12px 12px 12px 0;
+    font-size: 14px;
+  }
+  .chat-msg.user::before {
+    content: 'Ty';
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: var(--mono);
+  }
+  .chat-msg.agent {
+    padding: 10px 14px;
+    border-left: 2px solid var(--accent);
+    background: rgba(212,69,47,0.04);
+    border-radius: 0 12px 12px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  .chat-msg.agent::before {
+    content: 'Copilot';
+    display: block;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .chat-msg.agent .verdict-pass { color: var(--success); font-weight: 700; }
+  .chat-msg.agent .verdict-fail { color: var(--accent); font-weight: 700; }
+  .chat-msg.agent .verdict-warn { color: var(--warn); font-weight: 700; }
+  .chat-msg.agent .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .presets {
+    padding: 12px 16px;
+    border-top: 1px solid var(--muted-bg);
+    background: var(--muted-bg);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    background: var(--cream);
+    border: 1px solid var(--muted);
+    color: var(--fg);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .preset-btn.active {
+    background: var(--fg);
+    color: var(--cream);
+    border-color: var(--fg);
+  }
+
+  /* ───── Stack trace ───── */
+  .trace {
+    border: 1px solid var(--muted-bg);
+    border-radius: 6px;
+    padding: 24px 16px 16px;
+    background: white;
+  }
+  .trace-title {
+    font-family: var(--display);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 16px;
+    font-weight: 700;
+  }
+  .trace-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .layer-chip {
+    position: relative;
+    border: 1.5px solid var(--muted);
+    border-radius: 6px;
+    background: var(--cream);
+    padding: 12px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    min-height: 76px;
+  }
+  .layer-chip:hover {
+    border-color: var(--accent);
+  }
+  .layer-chip.expanded {
+    background: var(--fg);
+    color: var(--cream);
+    border-color: var(--fg);
+  }
+  .layer-chip[data-status=pass] { border-color: var(--success); }
+  .layer-chip[data-status=warn] { border-color: var(--warn); }
+  .layer-chip[data-status=block],
+  .layer-chip[data-status=fail] { border-color: var(--accent); background: rgba(212,69,47,0.06); }
+  .layer-chip[data-status=skipped] {
+    opacity: 0.4;
+    border-style: dashed;
+  }
+  .layer-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .layer-chip.expanded .layer-num { color: var(--cream); opacity: 0.7; }
+  .layer-name {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    margin: 2px 0;
+  }
+  .layer-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .layer-chip.expanded .layer-sub { color: var(--cream); opacity: 0.8; }
+  .layer-status {
+    position: absolute;
+    top: -8px;
+    right: -6px;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-weight: 500;
+    background: var(--cream);
+    border: 1px solid currentColor;
+  }
+  .layer-status.pass { color: var(--success); }
+  .layer-status.warn { color: var(--warn); }
+  .layer-status.block,
+  .layer-status.fail { color: var(--accent); }
+  .layer-status.skipped { color: var(--muted); }
+
+  .wires {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .wire {
+    position: absolute;
+    height: 2px;
+    background: var(--muted);
+    top: 0;
+  }
+  .wire.active { background: var(--accent); }
+  .wire.dotted {
+    background: transparent;
+    border-top: 2px dotted var(--muted);
+    height: 0;
+  }
+  .packet {
+    position: absolute;
+    top: -5px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(212,69,47,0.2);
+    transition: left 0.3s linear;
+    z-index: 10;
+  }
+
+  /* ───── Event stream (under-the-hood log) ───── */
+  .event-stream {
+    margin-top: 12px;
+    border: 1px solid var(--muted-bg);
+    border-radius: 6px;
+    background: #1a1814;
+    color: #e8e4dc;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.55;
+    overflow: hidden;
+  }
+  .event-stream.collapsed {
+    background: var(--muted-bg);
+    color: var(--text);
+  }
+  .stream-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid #2d2a25;
+    background: #0f0e0c;
+  }
+  .stream-title {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #f0d4a8;
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+  .stream-sub { color: #807a6e; font-size: 11px; flex: 1; }
+  .stream-toggle {
+    background: transparent;
+    border: 1px solid #4a4742;
+    color: #c0bcb4;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .stream-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .event-stream.collapsed .stream-toggle {
+    border: none;
+    background: var(--muted-bg);
+    color: var(--accent);
+    padding: 10px 14px;
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+  }
+  .event-stream.collapsed .stream-toggle:hover { background: rgba(212,69,47,0.06); }
+  .stream-body {
+    padding: 8px 0;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .ev-line {
+    display: grid;
+    grid-template-columns: 60px 22px auto 1fr;
+    gap: 8px;
+    align-items: baseline;
+    padding: 3px 14px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .ev-line:hover { background: #25221d; border-left-color: var(--accent); }
+  .ev-time { color: #6b6760; font-size: 11px; }
+  .ev-icon { font-size: 13px; }
+  .ev-label { color: #f0d4a8; font-weight: 500; }
+  .ev-detail { color: #a8a298; }
+  .ev-line.pass .ev-label { color: #8ed18e; }
+  .ev-line.warn .ev-label { color: #e8b760; }
+  .ev-line.fail .ev-label, .ev-line.block .ev-label { color: #e87a5e; }
+  .ev-line.skipped { opacity: 0.55; }
+  .ev-line.skipped .ev-label { color: #8a857c; }
+  .cursor-line { padding: 3px 14px; }
+  .ev-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 12px;
+    background: var(--accent);
+    animation: blink 0.7s steps(2) infinite;
+    vertical-align: text-bottom;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+  /* ───── Pod kapotou ───── */
+  .pod {
+    background: var(--muted-bg);
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .pod-title {
+    font-family: var(--display);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .pod pre {
+    background: var(--cream);
+    padding: 12px;
+    border-radius: 4px;
+    margin: 0;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .pod pre .hl { background: rgba(212,69,47,0.18); padding: 1px 0; }
+  .pod pre .dim { color: var(--muted); }
+  .pod-evals {
+    display: grid;
+    gap: 6px;
+  }
+  .pod-eval {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .pod-eval .mark { font-weight: 700; width: 16px; }
+  .pod-eval.pass .mark { color: var(--success); }
+  .pod-eval.fail .mark { color: var(--accent); }
+  .pod-eval.skip .mark { color: var(--muted); }
+  .pod-eval-detail {
+    color: var(--muted);
+    margin-left: 24px;
+    font-size: 11px;
+  }
+
+  /* ───── Downloads ───── */
+  .downloads {
+    border-top: 1px solid var(--muted-bg);
+    margin-top: 32px;
+    padding-top: 24px;
+  }
+  .downloads h2 {
+    font-family: var(--display);
+    font-size: 22px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .downloads h2 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .downloads p {
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .dl-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .dl-btn {
+    background: var(--fg);
+    color: var(--cream);
+    border: none;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 13px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dl-btn:hover {
+    background: var(--accent);
+  }
+  .dl-btn::before {
+    content: '↓';
+    font-family: var(--display);
+    font-weight: 700;
+  }
+
+  /* ───── Test runner ───── */
+  .test-result {
+    font-family: var(--mono);
+    padding: 32px;
+    font-size: 14px;
+  }
+  .test-banner {
+    font-family: var(--display);
+    font-size: 28px;
+    color: var(--rule);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .test-banner.fail { color: var(--accent); }
+  .test-line { padding: 2px 0; }
+  .test-line.pass { color: var(--success); }
+  .test-line.fail { color: var(--accent); }
+
+  /* ───── Mobile ───── */
+  @media (max-width: 900px) {
+    .page { padding: 16px; }
+    .hero h1 { font-size: 32px; }
+    .main { grid-template-columns: 1fr; }
+    .controls {
+      position: static;
+      order: 99;
+    }
+    .trace-row {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .wires { display: none; }
+    .packet { display: none; }
+    .ev-line {
+      grid-template-columns: 22px 1fr;
+      grid-template-rows: auto auto;
+      row-gap: 2px;
+      padding: 6px 12px;
+    }
+    .ev-time { display: none; }
+    .ev-icon { grid-row: 1; }
+    .ev-label { grid-row: 1; grid-column: 2; }
+    .ev-detail { grid-row: 2; grid-column: 2; font-size: 11px; }
+    .stream-sub { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .packet { transition: none !important; }
+    .chat-msg.agent .cursor { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ════════════════════════════════════════════════════════════
+   DATA — embedded artifact text + scenario definitions
+   ════════════════════════════════════════════════════════════ */
+
+const TABLES = {
+  TEROR2: ["EVENTID","IYEAR","IMONTH","COUNTRY","COUNTRY_TXT","REGION","REGION_TXT","ATTACKTYPE1","ATTACKTYPE1_TXT","NKILL","NWOUND","NPERPS","SUMMARY","TARGET1"],
+  TEROR2_OLD: ["EVENTID","IYEAR","IMONTH","COUNTRY","COUNTRY_TXT","REGION","REGION_TXT","ATTACKTYPE1","NKILL","NWOUND"],
+  COUNTRY: ["COUNTRY","COUNTRY_TXT"],
+  COUNTRY_DIRTYDATA: ["COUNTRY","COUNTRY_TXT"],
+  REGION: ["REGION","REGION_TXT"],
+  ATTACKTYPE: ["ATTACKTYPE","ATTACKTYPE_TXT"],
+};
+
+const COUNTRY_ROW_COUNTS = { COUNTRY: 204, COUNTRY_DIRTYDATA: 408 };
+
+const SCENARIOS = {
+  A: {
+    label: "Top 10 zemí",
+    prompt: "Najdi mi top 10 zemí podle počtu útoků v letech 2014–2020.",
+  },
+  B: {
+    label: "Zkontroluj SQL",
+    prompt: "Zkontroluj tenhle SQL:\nSELECT REGION_TXT, YEAR, COUNT(*), SUM(victims)\nFROM TEROR2_OLD\nWHERE YEAR >= 2018",
+  },
+  C: {
+    label: "Smaž TEROR2_OLD",
+    prompt: "Smaž TEROR2_OLD, ať máme čisto.",
+  },
+};
+
+const AGENTS_MD = `# AGENTS.md
+
+> Generated by czechitas-stack-trace · 2026-05-26
+> Drop this at the root of your project. OpenCode and Copilot both read it.
+
+## Role
+You are a SQL review assistant for Czechitas data analysts working with the
+GTD terrorism dataset.
+
+## Defaults
+- Snowflake schema: COURSES.SCH_TEROR
+- Read-only mode (no DDL/DML)
+- Always include \`table_used\` in answers
+
+## Output schema
+verdict / table_used / evidence / risks / next_step
+
+## Skills
+Skills auto-load from .opencode/skills/*.md. The active skill for SQL review
+is sql-review.md — see that file for the full procedure.
+`;
+
+const SKILL_MD = `# Skill: SQL Dashboard Readiness Review
+
+> Generated by czechitas-stack-trace · 2026-05-26
+> Drop this into .opencode/skills/ (or your agent's skill folder).
+
+## When to use
+Trigger when the user shares a SQL query and asks to review, validate, or
+check it — especially if the result will go to a dashboard or stakeholder.
+
+## What to fetch first — always
+1. \`list_tables\` — what tables exist in the schema?
+2. \`describe_table\` on every table referenced in the query
+3. Confirm every column in SELECT/WHERE/GROUP BY/ORDER BY/JOIN exists
+
+## Safety rules — never break these
+- **Read-only.** Refuse DELETE, UPDATE, INSERT, DROP, TRUNCATE, ALTER, MERGE,
+  CREATE TABLE AS SELECT. Verdict: fail, reason: destructive operation.
+- **Never invent columns.** If a referenced column does not exist, fail.
+- **Deprecated tables (_OLD, _V1, _BACKUP, _LEGACY suffixes).** Reject and
+  name the current alternative.
+- **Big scans.** > 1M rows without a date/partition WHERE → warn.
+
+## Checks (in order)
+1. Schema match
+2. Table currency (no _OLD)
+3. Sentinel values (-99, -9, 9999)
+4. Null handling
+5. Grain clarity
+6. Country lookup: prefer COUNTRY (204 rows) over COUNTRY_DIRTYDATA (408 rows)
+
+## Output format
+verdict:    pass | warn | fail
+table_used: [actual tables, deduped]
+evidence:  - [concrete schema fact]
+risks:     - [what may go wrong]
+next_step: - [one or two concrete actions]
+
+Length: under 300 words.
+`;
+
+const MCP_JSON = `{
+  "// Generated by czechitas-stack-trace · 2026-05-26": "",
+  "// Drop this at .vscode/mcp.json — VS Code Copilot Chat will discover it": "",
+  "servers": {
+    "snowflake": {
+      "command": "py",
+      "args": ["-m", "snowflake_mcp_server"],
+      "env": {
+        "SNOWFLAKE_ACCOUNT": "\${input:snowflake_account}",
+        "SNOWFLAKE_USER": "\${input:snowflake_user}",
+        "SNOWFLAKE_PASSWORD": "\${input:snowflake_password}",
+        "SNOWFLAKE_WAREHOUSE": "COMPUTE_WH",
+        "SNOWFLAKE_DATABASE": "COURSES",
+        "SNOWFLAKE_SCHEMA": "SCH_TEROR"
+      }
+    }
+  },
+  "inputs": [
+    { "id": "snowflake_account",  "type": "promptString", "description": "Snowflake account ID" },
+    { "id": "snowflake_user",     "type": "promptString", "description": "Snowflake user" },
+    { "id": "snowflake_password", "type": "promptString", "description": "Password", "password": true }
+  ]
+}
+`;
+
+/* ════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════ */
+
+function defaultState() {
+  return {
+    scenario: "A",
+    skillOn: true,
+    rules: { refuseDrop: true, neverInvent: true, rejectOld: true, preferCountry: true },
+    mcp: { snowflake: true, filesystem: false, jira: false },
+    evals: { schemaMatch: true, noDestructive: true, noDirtyLeak: true, count408: true },
+    expanded: null,
+    animating: false,
+    typing: false,
+    typed: "",
+    eventIdx: 0,
+    streamCollapsed: false,
+  };
+}
+
+let state = defaultState();
+
+function setState(patch) {
+  Object.assign(state, patch);
+  if (patch.scenario !== undefined ||
+      patch.skillOn !== undefined ||
+      patch.rules !== undefined ||
+      patch.mcp !== undefined ||
+      patch.evals !== undefined) {
+    state.expanded = null;
+    state.typed = "";
+    state.typing = false;
+    runWithAnimation();
+  } else {
+    render();
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SIMULATION — pure function: run(scenario, state) → {trace, output}
+   trace is an array of 5 layers, each {layer, status, details}
+   status ∈ {pass, warn, fail, block, skipped}
+   ════════════════════════════════════════════════════════════ */
+
+function run(scenarioKey, s) {
+  const trace = [];
+  const sc = SCENARIOS[scenarioKey];
+
+  // Layer 1: Prompt
+  trace.push({ layer: "prompt", status: "pass", details: sc.prompt });
+
+  // Layer 2: Config (always passes — adds AGENTS.md preamble)
+  trace.push({
+    layer: "config",
+    status: "pass",
+    details: {
+      preamble: "Read-only · schema COURSES.SCH_TEROR · output verdict/table_used/evidence/risks/next_step",
+      activeLines: [3, 4, 9, 10],
+    },
+  });
+
+  // Layer 3: Skill
+  const skillResult = runSkill(scenarioKey, s);
+  trace.push({ layer: "skill", status: skillResult.status, details: skillResult });
+
+  // Layer 4: MCP
+  let mcpResult;
+  if (skillResult.status === "block") {
+    mcpResult = { status: "skipped", calls: [], reason: "skill blocked the request" };
+  } else {
+    mcpResult = runMcp(scenarioKey, s, skillResult);
+  }
+  trace.push({ layer: "mcp", status: mcpResult.status, details: mcpResult });
+
+  // Layer 5: Evals
+  const evalResult = runEvals(scenarioKey, s, skillResult, mcpResult);
+  trace.push({ layer: "evals", status: evalResult.status, details: evalResult });
+
+  // Final output
+  const output = composeOutput(scenarioKey, s, trace);
+
+  return { trace, output };
+}
+
+function runSkill(scenarioKey, s) {
+  if (!s.skillOn) {
+    return { status: "skipped", violations: [], firedRules: [], reason: "skill disabled" };
+  }
+
+  const violations = [];
+  const firedRules = [];
+
+  if (scenarioKey === "C") {
+    if (s.rules.refuseDrop) {
+      violations.push("DROP TABLE is destructive (refuse DROP/DELETE/UPDATE)");
+      firedRules.push("refuseDrop");
+    }
+  }
+
+  if (scenarioKey === "B") {
+    if (s.rules.rejectOld) {
+      violations.push("TEROR2_OLD is a deprecated _OLD table — use TEROR2");
+      firedRules.push("rejectOld");
+    }
+    if (s.rules.neverInvent) {
+      violations.push("column YEAR does not exist in TEROR2 (use IYEAR)");
+      violations.push("column victims does not exist (use NKILL + NWOUND)");
+      firedRules.push("neverInvent");
+    }
+  }
+
+  if (violations.length > 0) {
+    return { status: "block", violations, firedRules };
+  }
+
+  // Scenario A: skill notes preferCountry but doesn't block
+  if (scenarioKey === "A") {
+    const notes = [];
+    if (s.rules.preferCountry) {
+      notes.push("note: prefer COUNTRY (204 rows) over COUNTRY_DIRTYDATA (408 rows)");
+      firedRules.push("preferCountry");
+    }
+    return { status: "pass", violations: [], firedRules, notes };
+  }
+
+  return { status: "pass", violations: [], firedRules };
+}
+
+function runMcp(scenarioKey, s, skillResult) {
+  if (!s.mcp.snowflake) {
+    return { status: "fail", calls: [], reason: "snowflake MCP server not enabled" };
+  }
+
+  if (scenarioKey === "A") {
+    // Skill rule preferCountry steers the agent: ON → use clean COUNTRY table; OFF → agent
+    // grabs whichever country table it discovered first (DIRTYDATA appears earlier alphabetically).
+    const useClean = (s.skillOn && s.rules.preferCountry);
+    const countryTable = useClean ? "COUNTRY" : "COUNTRY_DIRTYDATA";
+    return {
+      status: "pass",
+      calls: [
+        { tool: "list_tables", args: {} },
+        { tool: "describe_table", args: { table_name: "TEROR2" } },
+        { tool: "describe_table", args: { table_name: countryTable } },
+        { tool: "execute_query", args: {
+          sql: `SELECT c.country_txt, COUNT(*) AS attacks
+FROM TEROR2 t JOIN ${countryTable} c ON t.country = c.country
+WHERE t.iyear BETWEEN 2014 AND 2020
+GROUP BY c.country_txt
+ORDER BY attacks DESC
+LIMIT 10`,
+        }},
+      ],
+      countryTable,
+      rows: [
+        ["Iraq", 18762],
+        ["Afghanistan", 11340],
+        ["Pakistan", 6228],
+        ["India", 5481],
+        ["Philippines", 3620],
+        ["Nigeria", 3014],
+        ["Syria", 2892],
+        ["Yemen", 2641],
+        ["Somalia", 2107],
+        ["Libya", 1818],
+      ],
+    };
+  }
+
+  if (scenarioKey === "B") {
+    // skill blocked → not reached, BUT if skill off / neverInvent off, MCP runs and SQL errors
+    return {
+      status: "fail",
+      calls: [
+        { tool: "list_tables", args: {} },
+        { tool: "execute_query", args: {
+          sql: "SELECT REGION_TXT, YEAR, COUNT(*), SUM(victims) FROM TEROR2_OLD WHERE YEAR >= 2018",
+        }},
+      ],
+      reason: "SQL error: invalid identifier 'YEAR' (column does not exist in TEROR2_OLD)",
+    };
+  }
+
+  if (scenarioKey === "C") {
+    // skill blocked → not reached, BUT if refuseDrop off, the DROP runs
+    return {
+      status: "fail",
+      calls: [
+        { tool: "execute_query", args: { sql: "DROP TABLE TEROR2_OLD" } },
+      ],
+      reason: "DROP TABLE executed — TEROR2_OLD deleted",
+      destructiveExecuted: true,
+    };
+  }
+
+  return { status: "pass", calls: [] };
+}
+
+function runEvals(scenarioKey, s, skillResult, mcpResult) {
+  const cases = [];
+
+  if (s.evals.schemaMatch) {
+    let pass = true;
+    if (mcpResult.status === "fail" && (mcpResult.reason || "").includes("invalid identifier")) {
+      pass = false;
+    }
+    cases.push({ name: "schema match", pass, detail: pass ? "all referenced columns exist" : "MCP returned schema error" });
+  }
+
+  if (s.evals.noDestructive) {
+    const pass = !mcpResult.destructiveExecuted;
+    cases.push({ name: "no destructive operation", pass, detail: pass ? "no DDL/DML executed" : "DROP TABLE was executed" });
+  }
+
+  if (s.evals.noDirtyLeak) {
+    const usedDirty = (mcpResult.countryTable === "COUNTRY_DIRTYDATA");
+    cases.push({ name: "no _DIRTYDATA leak", pass: !usedDirty, detail: usedDirty ? "answer derived from COUNTRY_DIRTYDATA" : "no _DIRTYDATA tables referenced" });
+  }
+
+  if (s.evals.count408) {
+    const usedDirty = (mcpResult.countryTable === "COUNTRY_DIRTYDATA");
+    cases.push({ name: "count ≠ 408", pass: !usedDirty, detail: usedDirty ? "country count consistent with DIRTYDATA (408 ≠ 204)" : "country count looks clean" });
+  }
+
+  const anyFail = cases.some(c => !c.pass);
+  return { status: anyFail ? "warn" : "pass", cases };
+}
+
+function composeOutput(scenarioKey, s, trace) {
+  const skill = trace[2].details;
+  const mcp = trace[3].details;
+  const evals = trace[4].details;
+
+  if (scenarioKey === "C") {
+    if (skill.status === "block") {
+      return [
+        "verdict: <span class='verdict-fail'>fail</span>",
+        "table_used: none",
+        "evidence:",
+        "  - requested operation is DROP TABLE — destructive",
+        "  - skill rule 'refuse DROP' fired",
+        "risks:",
+        "  - data loss; this MCP session is read-only by config",
+        "next_step:",
+        "  - if you really need to drop, do it via Snowflake console with explicit confirmation",
+      ].join("\n");
+    } else if (mcp.destructiveExecuted) {
+      const why = !s.skillOn
+        ? "WARNING: skill is disabled — nothing checked the SQL"
+        : "WARNING: rule refuseDrop is OFF — destructive verb not screened";
+      return [
+        "verdict: <span class='verdict-fail'>executed (guardrail bypassed)</span>",
+        "table_used: TEROR2_OLD",
+        "evidence:",
+        "  - DROP TABLE TEROR2_OLD ran successfully",
+        "  - " + why,
+        "risks:",
+        "  - data loss is permanent",
+        "next_step:",
+        "  - re-enable the missing guardrail and recover from backup",
+      ].join("\n");
+    } else if (mcp.status === "fail") {
+      return [
+        "verdict: <span class='verdict-fail'>fail</span>",
+        "table_used: none",
+        "evidence:",
+        "  - " + (mcp.reason || "MCP unavailable"),
+        "  - request never reached the database",
+        "risks:",
+        "  - none — destructive operation not executed",
+        "next_step:",
+        "  - re-enable the snowflake MCP server",
+      ].join("\n");
+    }
+  }
+
+  if (scenarioKey === "B") {
+    if (skill.status === "block") {
+      const violations = skill.violations.map(v => `  - ${v}`).join("\n");
+      return [
+        "verdict: <span class='verdict-fail'>fail</span>",
+        "table_used: none (rejected before execution)",
+        "evidence:",
+        violations,
+        "risks: would have returned wrong data or errored",
+        "next_step: rewrite as",
+        "  SELECT region_txt, iyear, COUNT(*) AS attacks,",
+        "         SUM(nkill) AS killed, SUM(nwound) AS wounded",
+        "  FROM TEROR2 WHERE iyear >= 2018 GROUP BY region_txt, iyear",
+      ].join("\n");
+    } else if (mcp.status === "fail") {
+      const why = !s.skillOn
+        ? "WARNING: skill is disabled — nothing pre-screened the SQL"
+        : "WARNING: rules rejectOld and neverInvent are OFF — bad columns slipped through";
+      const noServer = (mcp.reason || "").includes("not enabled");
+      return [
+        "verdict: <span class='verdict-fail'>fail</span>",
+        "table_used: " + (noServer ? "none" : "TEROR2_OLD"),
+        "evidence:",
+        "  - " + (mcp.reason || "MCP failed"),
+        "  - " + why,
+        "risks: agent presented a plausible-looking SQL with non-existent columns",
+        "next_step: re-enable the missing guardrails and re-run",
+      ].join("\n");
+    }
+  }
+
+  if (scenarioKey === "A") {
+    if (mcp.status === "fail") {
+      return [
+        "verdict: <span class='verdict-fail'>fail</span>",
+        "table_used: none",
+        "evidence:",
+        "  - " + (mcp.reason || "MCP unavailable"),
+        "  - cannot answer without database access",
+        "risks:",
+        "  - none — request never reached the database",
+        "next_step:",
+        "  - re-enable the snowflake MCP server",
+      ].join("\n");
+    }
+
+    const rows = mcp.rows || [];
+    const rowsText = rows.map((r,i) => `  ${i+1}. ${r[0]} — ${r[1].toLocaleString()} attacks`).join("\n");
+    const usedDirty = (mcp.countryTable === "COUNTRY_DIRTYDATA");
+    const evalFlagged = evals.cases.some(c => !c.pass);
+
+    let verdict, evidence, risks, nextStep;
+    if (usedDirty && evalFlagged) {
+      verdict = "<span class='verdict-warn'>warn</span>";
+      evidence = "  - joined COUNTRY_DIRTYDATA (408 rows, contains duplicates)\n  - country counts may be inflated";
+      risks = "  - evals flagged DIRTYDATA → likely double-counts";
+      nextStep = "  - swap COUNTRY_DIRTYDATA → COUNTRY (204 clean rows) and re-run";
+    } else if (usedDirty) {
+      verdict = "<span class='verdict-pass'>pass (silently)</span>";
+      evidence = "  - joined COUNTRY_DIRTYDATA (408 rows, contains duplicates)\n  - the relevant evals are OFF — nothing flagged the leak";
+      risks = "  - dashboard would ship with inflated numbers; no evidence in the verdict";
+      nextStep = "  - re-enable count408 / noDirtyLeak evals before trusting this output";
+    } else {
+      verdict = "<span class='verdict-pass'>pass</span>";
+      evidence = "  - joined COUNTRY (204 clean rows)\n  - skill rule preferCountry steered the agent to the clean table";
+      risks = "  - none flagged";
+      nextStep = "  - ship to dashboard";
+    }
+
+    return [
+      "verdict: " + verdict,
+      "table_used: TEROR2, " + mcp.countryTable,
+      "rows:",
+      rowsText,
+      "evidence:",
+      evidence,
+      "risks:",
+      risks,
+      "next_step:",
+      nextStep,
+    ].join("\n");
+  }
+
+  return "(no output)";
+}
+
+/* ════════════════════════════════════════════════════════════
+   EVENT STREAM — derives a chronological "what's happening" log
+   from the trace. Lets viewers see the agent's reasoning step-by-step
+   instead of just the final verdict.
+   ════════════════════════════════════════════════════════════ */
+
+function buildEventStream(trace, s, scenarioKey) {
+  const ev = [];
+  const sc = SCENARIOS[scenarioKey];
+  const skill = trace[2].details;
+  const mcp = trace[3].details;
+  const evals = trace[4].details;
+
+  // Layer 1: prompt arrives
+  ev.push({ layer: "prompt", icon: "📥", label: "PROMPT received",
+            detail: '"' + (sc.prompt.length > 60 ? sc.prompt.slice(0, 60) + "…" : sc.prompt) + '"' });
+
+  // Layer 2: config loads
+  ev.push({ layer: "config", icon: "📋", label: "CONFIG loaded",
+            detail: "preamble: read-only · schema=COURSES.SCH_TEROR · output=verdict/table/evidence" });
+
+  // Layer 3: skill checks
+  if (!s.skillOn) {
+    ev.push({ layer: "skill", icon: "⏸️", label: "SKILL skipped",
+              detail: "skill is disabled in toggles — no SQL check performed", status: "skipped" });
+  } else {
+    ev.push({ layer: "skill", icon: "🛡️", label: "SKILL loaded",
+              detail: "sql-review.md — 4 rules active" });
+    if (scenarioKey === "B") {
+      if (s.rules.rejectOld) {
+        ev.push({ layer: "skill", icon: "🔍", label: "rule rejectOld checks /(_OLD|_BACKUP|_LEGACY)/i",
+                  detail: skill.firedRules?.includes("rejectOld") ? "match: TEROR2_OLD ✗" : "no match" });
+      }
+      if (s.rules.neverInvent) {
+        ev.push({ layer: "skill", icon: "🔍", label: "rule neverInvent verifies columns vs schema",
+                  detail: skill.firedRules?.includes("neverInvent") ? "YEAR ∉ TEROR2 schema · victims ∉ TEROR2 schema ✗" : "all columns exist" });
+      }
+    }
+    if (scenarioKey === "C" && s.rules.refuseDrop) {
+      ev.push({ layer: "skill", icon: "🔍", label: "rule refuseDrop matches /(DROP|DELETE|UPDATE|TRUNCATE)/i",
+                detail: skill.firedRules?.includes("refuseDrop") ? "match: DROP TABLE ✗" : "no match" });
+    }
+    if (scenarioKey === "A" && s.rules.preferCountry) {
+      ev.push({ layer: "skill", icon: "🔍", label: "rule preferCountry advises clean table",
+                detail: "→ steer agent to COUNTRY (204 rows), avoid COUNTRY_DIRTYDATA (408)" });
+    }
+    if (skill.status === "block") {
+      ev.push({ layer: "skill", icon: "🛑", label: "SKILL blocks the request",
+                detail: skill.violations.length + " violation(s) — returning early to chat", status: "block" });
+    } else if (skill.status === "pass") {
+      ev.push({ layer: "skill", icon: "✓", label: "SKILL passes — request OK to execute",
+                detail: scenarioKey === "A" && s.rules.preferCountry ? "with steering note for table choice" : "no violations", status: "pass" });
+    }
+  }
+
+  // Layer 4: MCP
+  if (mcp.status === "skipped") {
+    ev.push({ layer: "mcp", icon: "⏸️", label: "MCP skipped",
+              detail: "skill blocked the request → no execute_query call", status: "skipped" });
+  } else if (mcp.status === "fail" && (mcp.reason || "").includes("not enabled")) {
+    ev.push({ layer: "mcp", icon: "❌", label: "MCP unavailable",
+              detail: "snowflake server toggled OFF — request fails before any call", status: "fail" });
+  } else {
+    (mcp.calls || []).forEach((c, i) => {
+      let detail;
+      if (c.tool === "list_tables") detail = "→ returns 4 tables in COURSES.SCH_TEROR";
+      else if (c.tool === "describe_table") detail = "→ schema for " + (c.args.table_name || "?");
+      else if (c.tool === "execute_query") detail = (c.args.sql || "").split("\n")[0].slice(0, 70) + (c.args.sql && c.args.sql.length > 70 ? "…" : "");
+      else detail = JSON.stringify(c.args);
+      ev.push({ layer: "mcp", icon: "📡", label: "MCP call · " + c.tool, detail });
+    });
+    if (mcp.status === "fail") {
+      ev.push({ layer: "mcp", icon: "💥", label: "MCP returned error",
+                detail: mcp.reason || "execute_query failed", status: "fail" });
+    } else if (mcp.destructiveExecuted) {
+      ev.push({ layer: "mcp", icon: "💥", label: "destructive query executed",
+                detail: "TEROR2_OLD has been dropped — irreversible", status: "fail" });
+    } else {
+      ev.push({ layer: "mcp", icon: "✓", label: "MCP returned " + (mcp.rows ? mcp.rows.length : "?") + " rows",
+                detail: "from table " + (mcp.countryTable || "TEROR2"), status: "pass" });
+    }
+  }
+
+  // Layer 5: evals
+  const cases = evals.cases || [];
+  if (cases.length === 0) {
+    ev.push({ layer: "evals", icon: "⚪", label: "EVAL · no cases enabled",
+              detail: "all eval toggles are OFF — nothing checks the answer", status: "skipped" });
+  } else {
+    cases.forEach(c => {
+      ev.push({ layer: "evals", icon: c.pass ? "✓" : "✗", label: "EVAL · " + c.name,
+                detail: c.detail, status: c.pass ? "pass" : "fail" });
+    });
+  }
+
+  // Final
+  const finalStatus = trace[4].status === "warn" ? "warn"
+                    : trace[3].status === "fail" ? "fail"
+                    : trace[2].status === "block" ? "fail"
+                    : "pass";
+  ev.push({ layer: "output", icon: "📤", label: "OUTPUT composed",
+            detail: "verdict=" + (finalStatus === "warn" ? "warn" : finalStatus === "fail" ? "fail" : "pass") + " · displayed in chat", status: finalStatus });
+
+  return ev;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RENDER
+   ════════════════════════════════════════════════════════════ */
+
+const LAYERS = [
+  { key: "prompt", num: "1", name: "Prompt", sub: "user input" },
+  { key: "config", num: "2", name: "Config", sub: "AGENTS.md" },
+  { key: "skill",  num: "3", name: "Skill",  sub: "sql-review" },
+  { key: "mcp",    num: "4", name: "MCP",    sub: "snowflake" },
+  { key: "evals",  num: "5", name: "Evals",  sub: "4 cases" },
+];
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+}
+
+function render() {
+  const root = document.getElementById("root");
+  const { trace, output } = run(state.scenario, state);
+  const events = buildEventStream(trace, state, state.scenario);
+
+  root.innerHTML = `
+    <div class="page">
+      ${renderHero()}
+      <div class="main">
+        ${renderControls()}
+        <div class="stage">
+          ${renderChat(trace, output)}
+          ${renderTrace(trace)}
+          ${renderEventStream(events)}
+          ${renderPod(trace)}
+          ${renderDownloads()}
+        </div>
+      </div>
+    </div>
+  `;
+
+  attachEvents();
+}
+
+function renderEventStream(events) {
+  const visible = state.animating ? events.slice(0, state.eventIdx)
+                                  : events;
+  const collapsed = state.streamCollapsed && !state.animating;
+
+  if (collapsed) {
+    return `
+      <div class="event-stream collapsed">
+        <button class="stream-toggle" data-stream="replay">▶ replay event stream (${events.length} steps)</button>
+      </div>
+    `;
+  }
+
+  const lines = visible.map((e, i) => {
+    const t = String((i * 0.12).toFixed(2)).padStart(5, " ");
+    const status = e.status || "";
+    return `
+      <div class="ev-line ${status}" data-layer="${e.layer}">
+        <span class="ev-time">[${t}s]</span>
+        <span class="ev-icon">${e.icon}</span>
+        <span class="ev-label">${escapeHtml(e.label)}</span>
+        <span class="ev-detail">${escapeHtml(e.detail)}</span>
+      </div>
+    `;
+  }).join("");
+
+  const cursor = state.animating ? `<div class="ev-line cursor-line"><span class="ev-time">…</span><span class="ev-cursor"></span></div>` : "";
+  const collapseBtn = !state.animating ? `<button class="stream-toggle dim" data-stream="collapse">▼ hide</button>` : "";
+
+  return `
+    <div class="event-stream">
+      <div class="stream-head">
+        <span class="stream-title">event stream</span>
+        <span class="stream-sub">co se děje pod kapotou — klikni na řádek pro detail</span>
+        ${collapseBtn}
+      </div>
+      <div class="stream-body">${lines}${cursor}</div>
+    </div>
+  `;
+}
+
+function renderHero() {
+  return `
+    <div class="hero">
+      <h1>Pět vrstev <em>v jednom dotazu</em></h1>
+      <p>Klikni na scénář a sleduj, jak prompt projde konfigurací, skillem, MCP a evaly. Pak si stáhni soubory a nasaď doma.</p>
+      <div class="hero-links">
+        <a href="https://ishalkin.github.io/czechitas-skill-builder/" target="_blank">→ Skill Builder</a>
+        <a href="https://github.com/IShalkin/czechitas-stack-trace" target="_blank">GitHub</a>
+      </div>
+    </div>
+  `;
+}
+
+function renderControls() {
+  const r = state.rules, m = state.mcp, e = state.evals;
+  const skillDisabled = !state.skillOn;
+  return `
+    <aside class="controls">
+      <h3>Skill</h3>
+      <label><input type="checkbox" data-toggle="skillOn" ${state.skillOn ? "checked" : ""}> skill on</label>
+
+      <h3>Rules</h3>
+      <label class="${skillDisabled ? "disabled" : ""}"><input type="checkbox" data-toggle="rules.refuseDrop" ${r.refuseDrop ? "checked" : ""} ${skillDisabled ? "disabled" : ""}> refuse DROP / DELETE / UPDATE</label>
+      <label class="${skillDisabled ? "disabled" : ""}"><input type="checkbox" data-toggle="rules.neverInvent" ${r.neverInvent ? "checked" : ""} ${skillDisabled ? "disabled" : ""}> never invent columns</label>
+      <label class="${skillDisabled ? "disabled" : ""}"><input type="checkbox" data-toggle="rules.rejectOld" ${r.rejectOld ? "checked" : ""} ${skillDisabled ? "disabled" : ""}> reject _OLD / _BACKUP</label>
+      <label class="${skillDisabled ? "disabled" : ""}"><input type="checkbox" data-toggle="rules.preferCountry" ${r.preferCountry ? "checked" : ""} ${skillDisabled ? "disabled" : ""}> prefer COUNTRY over DIRTYDATA</label>
+
+      <h3>MCP servers</h3>
+      <label><input type="checkbox" data-toggle="mcp.snowflake" ${m.snowflake ? "checked" : ""}> snowflake</label>
+      <label><input type="checkbox" data-toggle="mcp.filesystem" ${m.filesystem ? "checked" : ""}> filesystem</label>
+      <label><input type="checkbox" data-toggle="mcp.jira" ${m.jira ? "checked" : ""}> jira</label>
+
+      <h3>Evals</h3>
+      <label><input type="checkbox" data-toggle="evals.schemaMatch" ${e.schemaMatch ? "checked" : ""}> schema match</label>
+      <label><input type="checkbox" data-toggle="evals.noDestructive" ${e.noDestructive ? "checked" : ""}> no destructive</label>
+      <label><input type="checkbox" data-toggle="evals.noDirtyLeak" ${e.noDirtyLeak ? "checked" : ""}> no _DIRTYDATA leak</label>
+      <label><input type="checkbox" data-toggle="evals.count408" ${e.count408 ? "checked" : ""}> count ≠ 408</label>
+    </aside>
+  `;
+}
+
+function renderChat(trace, output) {
+  const sc = SCENARIOS[state.scenario];
+  const userMsg = escapeHtml(sc.prompt);
+
+  let agentBody;
+  if (state.animating) {
+    agentBody = `<span class="dim">processing…</span>`;
+  } else if (state.typing) {
+    agentBody = state.typed + `<span class="cursor"></span>`;
+  } else {
+    agentBody = output; // already contains safe HTML (verdict spans)
+  }
+
+  const presets = Object.entries(SCENARIOS).map(([k, sc]) =>
+    `<button class="preset-btn ${state.scenario === k ? "active" : ""}" data-scenario="${k}">${escapeHtml(sc.label)}</button>`
+  ).join("");
+
+  return `
+    <div class="chat">
+      <div class="chat-header">GitHub Copilot · @workspace</div>
+      <div class="chat-body">
+        <div class="chat-msg user">${userMsg}</div>
+        <div class="chat-msg agent">${agentBody}</div>
+      </div>
+      <div class="presets">${presets}</div>
+    </div>
+  `;
+}
+
+function renderTrace(trace) {
+  const chips = LAYERS.map((L, i) => {
+    const t = trace[i];
+    const isExpanded = state.expanded === L.key;
+    const statusLabel = t.status === "pass" ? "✓" :
+                        t.status === "warn" ? "!" :
+                        t.status === "block" ? "blocked" :
+                        t.status === "fail" ? "✗" :
+                        "—";
+    return `
+      <div class="layer-chip ${isExpanded ? "expanded" : ""}" data-status="${t.status}" data-layer="${L.key}">
+        <div class="layer-num">layer ${L.num}</div>
+        <div class="layer-name">${L.name}</div>
+        <div class="layer-sub">${L.sub}</div>
+        <div class="layer-status ${t.status}">${statusLabel}</div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="trace">
+      <p class="trace-title">Stack trace</p>
+      <div class="trace-row">${chips}</div>
+    </div>
+  `;
+}
+
+function renderPod(trace) {
+  if (!state.expanded) return "";
+  const idx = LAYERS.findIndex(L => L.key === state.expanded);
+  const t = trace[idx];
+
+  if (t.layer === "prompt") {
+    return `<div class="pod"><p class="pod-title">Pod kapotou · prompt</p><pre>${escapeHtml(t.details)}</pre></div>`;
+  }
+
+  if (t.layer === "config") {
+    const lines = AGENTS_MD.split("\n");
+    const active = new Set(t.details.activeLines);
+    const html = lines.map((line, i) => {
+      const safe = escapeHtml(line);
+      return active.has(i) ? `<span class="hl">${safe}</span>` : safe;
+    }).join("\n");
+    return `<div class="pod"><p class="pod-title">Pod kapotou · config (AGENTS.md)</p><pre>${html}</pre></div>`;
+  }
+
+  if (t.layer === "skill") {
+    const lines = SKILL_MD.split("\n").slice(0, 28);
+    const fired = new Set((t.details.firedRules || []));
+    const ruleMap = {
+      refuseDrop: /Refuse DELETE/,
+      neverInvent: /Never invent columns/,
+      rejectOld: /Deprecated tables/,
+      preferCountry: /Country lookup|prefer COUNTRY/,
+    };
+    const html = lines.map(line => {
+      const safe = escapeHtml(line);
+      for (const r of fired) {
+        if (ruleMap[r] && ruleMap[r].test(line)) {
+          return `<span class="hl">${safe}</span>`;
+        }
+      }
+      return safe;
+    }).join("\n");
+    let footer = "";
+    if (t.details.violations && t.details.violations.length) {
+      footer = `<p class="pod-title" style="margin-top:12px">Violations</p><pre>${t.details.violations.map(v => "✗ " + escapeHtml(v)).join("\n")}</pre>`;
+    }
+    if (t.details.status === "skipped") {
+      footer = `<p style="margin-top:12px;color:var(--muted)">skill is disabled — no rules evaluated</p>`;
+    }
+    return `<div class="pod"><p class="pod-title">Pod kapotou · skill (sql-review.md)</p><pre>${html}</pre>${footer}</div>`;
+  }
+
+  if (t.layer === "mcp") {
+    if (t.details.status === "skipped") {
+      return `<div class="pod"><p class="pod-title">Pod kapotou · MCP</p><pre class="dim">No MCP calls — skill blocked the request before tool use.</pre></div>`;
+    }
+    if (!t.details.calls || !t.details.calls.length) {
+      return `<div class="pod"><p class="pod-title">Pod kapotou · MCP</p><pre>${escapeHtml(t.details.reason || "no calls")}</pre></div>`;
+    }
+    const callsJson = t.details.calls.map(c =>
+      JSON.stringify({ method: "tools/call", params: { name: c.tool, arguments: c.args } }, null, 2)
+    ).join("\n\n");
+    let footer = "";
+    if (t.details.reason) {
+      footer = `<p class="pod-title" style="margin-top:12px">Result</p><pre>${escapeHtml(t.details.reason)}</pre>`;
+    }
+    return `<div class="pod"><p class="pod-title">Pod kapotou · MCP (snowflake)</p><pre>${escapeHtml(callsJson)}</pre>${footer}</div>`;
+  }
+
+  if (t.layer === "evals") {
+    const rows = (t.details.cases || []).map(c => `
+      <div class="pod-eval ${c.pass ? "pass" : "fail"}">
+        <span class="mark">${c.pass ? "✓" : "✗"}</span>
+        <span>${escapeHtml(c.name)}</span>
+      </div>
+      <div class="pod-eval-detail">${escapeHtml(c.detail)}</div>
+    `).join("");
+    return `<div class="pod"><p class="pod-title">Pod kapotou · evals</p><div class="pod-evals">${rows}</div></div>`;
+  }
+
+  return "";
+}
+
+function renderDownloads() {
+  return `
+    <div class="downloads">
+      <h2>Stáhni si bundle <em>a nasaď doma</em></h2>
+      <p>Tři reálné soubory — drop je do svého repozitáře a tvůj agent se začne chovat takhle.</p>
+      <div class="dl-row">
+        <button class="dl-btn" data-download="agents">AGENTS.md</button>
+        <button class="dl-btn" data-download="skill">.opencode/skills/sql-review.md</button>
+        <button class="dl-btn" data-download="mcp">.vscode/mcp.json</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════════════════════
+   EVENTS
+   ════════════════════════════════════════════════════════════ */
+
+function attachEvents() {
+  document.querySelectorAll("[data-scenario]").forEach(b => {
+    b.addEventListener("click", () => setState({ scenario: b.dataset.scenario }));
+  });
+
+  document.querySelectorAll("[data-toggle]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const path = cb.dataset.toggle;
+      const parts = path.split(".");
+      const patch = {};
+      if (parts.length === 1) {
+        patch[parts[0]] = cb.checked;
+      } else {
+        patch[parts[0]] = { ...state[parts[0]], [parts[1]]: cb.checked };
+      }
+      setState(patch);
+    });
+  });
+
+  document.querySelectorAll("[data-layer]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const layer = chip.dataset.layer;
+      if (!LAYERS.find(L => L.key === layer)) return; // ignore "output" event lines
+      state.expanded = state.expanded === layer ? null : layer;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-stream]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.stream;
+      if (action === "collapse") {
+        state.streamCollapsed = true;
+        render();
+      } else if (action === "replay") {
+        state.streamCollapsed = false;
+        runWithAnimation();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-download]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const which = btn.dataset.download;
+      if (which === "agents") download("AGENTS.md", AGENTS_MD);
+      else if (which === "skill") download("sql-review.md", SKILL_MD);
+      else if (which === "mcp") download("mcp.json", MCP_JSON);
+    });
+  });
+}
+
+function download(filename, content) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ════════════════════════════════════════════════════════════
+   ANIMATION + TYPEWRITER
+   ════════════════════════════════════════════════════════════ */
+
+const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let streamTimer = null;
+function runWithAnimation() {
+  if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+  if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+
+  if (reduceMotion) {
+    state.animating = false;
+    state.typing = false;
+    state.streamCollapsed = false;
+    state.eventIdx = Infinity;
+    render();
+    return;
+  }
+
+  // Build event count up front
+  const { trace } = run(state.scenario, state);
+  const totalEvents = buildEventStream(trace, state, state.scenario).length;
+
+  state.animating = true;
+  state.typing = false;
+  state.streamCollapsed = false;
+  state.eventIdx = 0;
+  render();
+
+  const STEP_MS = 120;
+  streamTimer = setInterval(() => {
+    state.eventIdx++;
+    if (state.eventIdx >= totalEvents) {
+      clearInterval(streamTimer);
+      streamTimer = null;
+      state.animating = false;
+      state.typing = true;
+      state.typed = "";
+      render();
+      typeOutput();
+    } else {
+      render();
+    }
+  }, STEP_MS);
+}
+
+let typeTimer = null;
+function typeOutput(done) {
+  if (typeTimer) clearInterval(typeTimer);
+  const { output } = run(state.scenario, state);
+  let i = 0;
+  typeTimer = setInterval(() => {
+    if (i >= output.length) {
+      clearInterval(typeTimer);
+      typeTimer = null;
+      state.typing = false;
+      render();
+      if (done) done();
+      return;
+    }
+    state.typed = output.slice(0, i + 1);
+    i += 3; // ~3 chars per tick
+    render();
+  }, 18);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SELF-TESTS  (?test=1)
+   ════════════════════════════════════════════════════════════ */
+
+const TESTS = [];
+function test(name, fn) { TESTS.push({ name, fn }); }
+function assert(cond, msg) { if (!cond) throw new Error(msg || "assertion failed"); }
+function assertEq(a, b, msg) {
+  if (a !== b) throw new Error((msg || "not equal") + " — got " + JSON.stringify(a) + ", expected " + JSON.stringify(b));
+}
+
+// — Scenario A defaults —
+test("A: 5-layer trace, skill steers to clean COUNTRY, evals pass", () => {
+  const { trace, output } = run("A", defaultState());
+  assertEq(trace.length, 5);
+  assertEq(trace.map(t => t.layer).join(","), "prompt,config,skill,mcp,evals");
+  assertEq(trace[2].status, "pass");
+  assertEq(trace[3].status, "pass");
+  assertEq(trace[3].details.countryTable, "COUNTRY");
+  assertEq(trace[4].status, "pass");
+  assert(output.includes("pass"));
+  assert(!output.includes("DIRTYDATA"));
+});
+
+test("A: rows include Iraq at top", () => {
+  const { trace } = run("A", defaultState());
+  assertEq(trace[3].details.rows[0][0], "Iraq");
+});
+
+test("A with preferCountry off: agent grabs DIRTYDATA, evals warn", () => {
+  const s = defaultState(); s.rules.preferCountry = false;
+  const { trace, output } = run("A", s);
+  assertEq(trace[3].details.countryTable, "COUNTRY_DIRTYDATA");
+  assertEq(trace[4].status, "warn");
+  assert(output.includes("warn"));
+});
+
+test("A with preferCountry off + all evals off: silent fail (DIRTYDATA, no warn)", () => {
+  const s = defaultState();
+  s.rules.preferCountry = false;
+  s.evals.schemaMatch = false; s.evals.noDestructive = false;
+  s.evals.noDirtyLeak = false; s.evals.count408 = false;
+  const { trace, output } = run("A", s);
+  assertEq(trace[3].details.countryTable, "COUNTRY_DIRTYDATA");
+  assertEq(trace[4].status, "pass");
+  assert(output.includes("silently"));
+});
+
+// — Scenario B defaults —
+test("B: skill blocks at layer 3", () => {
+  const { trace, output } = run("B", defaultState());
+  assertEq(trace[2].status, "block");
+  assertEq(trace[3].status, "skipped");
+  assert(trace[2].details.violations.some(v => v.includes("_OLD")));
+  assert(trace[2].details.violations.some(v => v.includes("YEAR")));
+  assert(trace[2].details.violations.some(v => v.includes("victims")));
+  assert(output.includes("fail"));
+});
+
+test("B with rejectOld off: still blocks via neverInvent", () => {
+  const s = defaultState(); s.rules.rejectOld = false;
+  const { trace } = run("B", s);
+  assertEq(trace[2].status, "block");
+  assert(trace[2].details.violations.some(v => v.includes("YEAR")));
+  assert(!trace[2].details.violations.some(v => v.includes("_OLD")));
+});
+
+test("B with neverInvent off: still blocks via rejectOld", () => {
+  const s = defaultState(); s.rules.neverInvent = false;
+  const { trace } = run("B", s);
+  assertEq(trace[2].status, "block");
+  assert(trace[2].details.violations.some(v => v.includes("_OLD")));
+});
+
+test("B with rejectOld AND neverInvent off: skill passes, MCP errors", () => {
+  const s = defaultState();
+  s.rules.rejectOld = false; s.rules.neverInvent = false;
+  const { trace, output } = run("B", s);
+  assertEq(trace[2].status, "pass");
+  assertEq(trace[3].status, "fail");
+  assert(output.includes("fail"));
+});
+
+test("B with skill off: passes through to MCP, returns SQL error", () => {
+  const s = defaultState(); s.skillOn = false;
+  const { trace } = run("B", s);
+  assertEq(trace[2].status, "skipped");
+  assertEq(trace[3].status, "fail");
+});
+
+test("B with skill off, schemaMatch eval still detects MCP error", () => {
+  const s = defaultState(); s.skillOn = false;
+  const { trace } = run("B", s);
+  const schemaCase = trace[4].details.cases.find(c => c.name === "schema match");
+  assertEq(schemaCase.pass, false);
+});
+
+// — Scenario C —
+test("C: skill blocks DROP", () => {
+  const { trace, output } = run("C", defaultState());
+  assertEq(trace[2].status, "block");
+  assertEq(trace[3].status, "skipped");
+  assert(output.includes("fail"));
+  assert(output.includes("DROP"));
+});
+
+test("C with refuseDrop off: DROP executes, noDestructive eval flips", () => {
+  const s = defaultState(); s.rules.refuseDrop = false;
+  const { trace, output } = run("C", s);
+  assertEq(trace[2].status, "pass");
+  assertEq(trace[3].status, "fail");
+  assert(trace[3].details.destructiveExecuted);
+  const noDest = trace[4].details.cases.find(c => c.name === "no destructive operation");
+  assertEq(noDest.pass, false);
+  assert(output.includes("executed"));
+});
+
+test("C with skill off: DROP executes, noDestructive flips", () => {
+  const s = defaultState(); s.skillOn = false;
+  const { trace } = run("C", s);
+  assertEq(trace[2].status, "skipped");
+  assertEq(trace[3].status, "fail");
+  assert(trace[3].details.destructiveExecuted);
+});
+
+// — MCP off —
+test("snowflake MCP off: layer 4 fails 'no tool'", () => {
+  const s = defaultState(); s.mcp.snowflake = false;
+  const { trace } = run("A", s);
+  assertEq(trace[3].status, "fail");
+  assert((trace[3].details.reason || "").includes("snowflake"));
+});
+
+test("snowflake MCP off does not affect Scenario C if skill blocks first", () => {
+  const s = defaultState(); s.mcp.snowflake = false;
+  const { trace } = run("C", s);
+  assertEq(trace[2].status, "block");
+  assertEq(trace[3].status, "skipped");
+});
+
+// — Eval combinations —
+test("A: turning off all evals → eval layer reports zero cases, status pass", () => {
+  const s = defaultState();
+  s.evals.schemaMatch = false; s.evals.noDestructive = false;
+  s.evals.noDirtyLeak = false; s.evals.count408 = false;
+  const { trace } = run("A", s);
+  assertEq(trace[4].details.cases.length, 0);
+  assertEq(trace[4].status, "pass");
+});
+
+test("Eval cases reflect enabled evals only", () => {
+  const s = defaultState();
+  s.evals.schemaMatch = false;
+  const { trace } = run("A", s);
+  const names = trace[4].details.cases.map(c => c.name);
+  assert(!names.includes("schema match"));
+  assert(names.includes("count ≠ 408"));
+});
+
+// — Layer 2 always passes —
+test("Config layer always passes (no rules to violate)", () => {
+  for (const k of ["A","B","C"]) {
+    const { trace } = run(k, defaultState());
+    assertEq(trace[1].status, "pass");
+  }
+});
+
+// — Output composition —
+test("Scenario A output mentions next_step", () => {
+  const { output } = run("A", defaultState());
+  assert(output.includes("next_step"));
+});
+
+test("Scenario B output includes corrected SQL", () => {
+  const { output } = run("B", defaultState());
+  assert(output.includes("iyear >= 2018"));
+  assert(output.includes("nkill"));
+});
+
+test("Scenario C output mentions DROP", () => {
+  const { output } = run("C", defaultState());
+  assert(output.toLowerCase().includes("drop"));
+});
+
+// — Determinism —
+test("run() is deterministic", () => {
+  const a = run("A", defaultState());
+  const b = run("A", defaultState());
+  assertEq(JSON.stringify(a.trace), JSON.stringify(b.trace));
+  assertEq(a.output, b.output);
+});
+
+// — defaultState —
+test("defaultState returns fresh object each call", () => {
+  const a = defaultState(), b = defaultState();
+  a.skillOn = false;
+  assertEq(b.skillOn, true);
+});
+
+// — DOM rendering —
+test("render() produces expected DOM landmarks", () => {
+  state = defaultState();
+  render();
+  assert(document.querySelector(".hero"));
+  assert(document.querySelector(".controls"));
+  assert(document.querySelector(".chat"));
+  assert(document.querySelectorAll(".layer-chip").length === 5);
+  assert(document.querySelectorAll(".preset-btn").length === 3);
+  assert(document.querySelectorAll(".dl-btn").length === 3);
+});
+
+test("Toggling preset button changes rendered scenario class", () => {
+  state = defaultState();
+  state.scenario = "B";
+  render();
+  const active = document.querySelector(".preset-btn.active");
+  assertEq(active.dataset.scenario, "B");
+});
+
+test("Expanding a layer chip adds expanded class", () => {
+  state = defaultState();
+  state.expanded = "config";
+  render();
+  const expanded = document.querySelector(".layer-chip.expanded");
+  assertEq(expanded.dataset.layer, "config");
+  assert(document.querySelector(".pod"));
+});
+
+// — Embedded files sanity —
+test("AGENTS_MD non-empty and contains Role section", () => {
+  assert(AGENTS_MD.length > 100);
+  assert(AGENTS_MD.includes("## Role"));
+});
+
+test("SKILL_MD contains all 4 rule references", () => {
+  assert(SKILL_MD.includes("DROP"));
+  assert(SKILL_MD.includes("Never invent"));
+  assert(SKILL_MD.includes("_OLD"));
+  assert(SKILL_MD.includes("COUNTRY"));
+});
+
+test("MCP_JSON parses as valid JSON (after stripping comments)", () => {
+  const stripped = MCP_JSON.replace(/^\s*"\/\/[^"]*":\s*"[^"]*",?\s*$/gm, "");
+  const parsed = JSON.parse(stripped);
+  assert(parsed.servers.snowflake);
+  assertEq(parsed.servers.snowflake.command, "py");
+});
+
+test("Scenarios object has exactly A, B, C", () => {
+  assertEq(Object.keys(SCENARIOS).sort().join(","), "A,B,C");
+});
+
+function runTests() {
+  const root = document.getElementById("root");
+  let passed = 0, failed = 0;
+  const lines = [];
+  for (const t of TESTS) {
+    try {
+      t.fn();
+      lines.push(`<div class="test-line pass">✓ ${escapeHtml(t.name)}</div>`);
+      passed++;
+    } catch (e) {
+      lines.push(`<div class="test-line fail">✗ ${escapeHtml(t.name)} — ${escapeHtml(e.message)}</div>`);
+      failed++;
+    }
+  }
+  const banner = failed === 0
+    ? `<div class="test-banner">ALL TESTS PASSED (${passed})</div>`
+    : `<div class="test-banner fail">${failed} FAILED, ${passed} PASSED</div>`;
+  root.innerHTML = `<div class="test-result">${banner}${lines.join("")}</div>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BOOT
+   ════════════════════════════════════════════════════════════ */
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (new URLSearchParams(location.search).has("test")) {
+    runTests();
+  } else {
+    render();
+  }
+});
+</script>
+</body>
+</html>
