@@ -552,8 +552,8 @@
         <h1 class="hero-title">SKILL BUILDER</h1>
         <div class="hero-ribbon"></div>
         <p class="hero-tagline">WE CAN BUILD IT.</p>
-        <p class="hero-subtitle">Klikni na pravidla vlevo — uvidíš, jak se mění chování agenta vpravo.</p>
-        <p class="hero-subtitle" style="margin-top:8px;font-size:14px;"><a href="https://ishalkin.github.io/czechitas-stack-trace/" style="color:var(--hero-cream);text-decoration:underline;">→ Stack Trace</a> — vidět, jak skill spolupracuje s ostatními vrstvami</p>
+        <p class="hero-subtitle">Klikni na pravidla vlevo, uvidíš, jak se mění chování agenta vpravo.</p>
+        <p class="hero-subtitle" style="margin-top:8px;font-size:14px;"><a href="https://ishalkin.github.io/czechitas-stack-trace/" style="color:var(--hero-cream);text-decoration:underline;">→ Stack Trace</a>, vidět, jak skill spolupracuje s ostatními vrstvami</p>
       </div>
       <div class="hero-star hero-star-tl" aria-hidden="true">★</div>
       <div class="hero-star hero-star-br" aria-hidden="true">★</div>
@@ -599,7 +599,7 @@
 
             <fieldset class="field">
               <legend class="field-label">Kontroly (procedurální)</legend>
-              <p class="banner">Tyto kontroly se zapíšou do skillu, ale nejsou simulovány v playgroundu — to je rozdíl mezi pravidly a procedurami.</p>
+              <p class="banner">Tyto kontroly se zapíšou do skillu, ale nejsou simulovány v playgroundu, to je rozdíl mezi pravidly a procedurami.</p>
               <div id="f-checks"></div>
             </fieldset>
 
@@ -613,11 +613,11 @@
               <legend class="field-label">Formát exportu</legend>
               <label class="radio-row">
                 <input type="radio" name="export-format" value="anthropic" checked>
-                <span>Anthropic — SKILL.md (s frontmatter)</span>
+                <span>Anthropic, SKILL.md (s frontmatter)</span>
               </label>
               <label class="radio-row">
                 <input type="radio" name="export-format" value="copilot">
-                <span>Copilot — AGENTS.md (jen tělo)</span>
+                <span>Copilot, AGENTS.md (jen tělo)</span>
               </label>
             </fieldset>
           </div>
@@ -838,7 +838,7 @@
       lines.push("Use this skill whenever the user shares SQL for review or asks whether a query is OK for a dashboard.");
       lines.push("");
 
-      // Safety rules — only if any active
+      // Safety rules, only if any active
       const activeRules = RULES.filter(r => state.activeRuleIds.includes(r.id));
       if (activeRules.length > 0) {
         lines.push("# Safety rules");
@@ -849,7 +849,7 @@
         lines.push("");
       }
 
-      // Checks — only if any active
+      // Checks, only if any active
       const activeChecks = CHECKS.filter(c => state.activeCheckIds.includes(c.id));
       if (activeChecks.length > 0) {
         lines.push("# Checks to perform");
@@ -860,7 +860,7 @@
         lines.push("");
       }
 
-      // Output format — always present
+      // Output format, always present
       lines.push("# Output format");
       lines.push("");
       lines.push("verdict: pass | warn | fail");
@@ -869,7 +869,7 @@
       lines.push("next_step: [one action]");
       lines.push("");
 
-      // References — only if any
+      // References, only if any
       if (state.references && state.references.length > 0) {
         lines.push("# References");
         lines.push("");
@@ -997,7 +997,7 @@
     function handleDownload() {
       const md = generateMarkdown(state);
       // Tier-1 default: Anthropic format → SKILL.md
-      // (Tier-2 may switch to AGENTS.md — handled in Task 11)
+      // (Tier-2 may switch to AGENTS.md, handled in Task 11)
       if (state.exportFormat === "copilot") {
         // Strip frontmatter for AGENTS.md
         const body = md.replace(/^---\n[\s\S]*?\n---\n\n?/, "");
@@ -1082,7 +1082,7 @@
         return `<span class="md-yaml-key">${key}</span><span class="md-yaml-value">${val}</span>`;
       }
       if (line.startsWith("- ")) {
-        // Bullet — apply keyword highlighting per active rule
+        // Bullet, apply keyword highlighting per active rule
         let highlighted = escaped;
         for (const r of activeRules) {
           const keyword = escapeHtml(r.keyword_in_markdown);
@@ -1607,7 +1607,7 @@
     });
 
     test("triggeringMatch: stop words alone do not match", () => {
-      // "the", "is", "a" are stopwords — should not count as overlap
+      // "the", "is", "a" are stopwords, should not count as overlap
       assertEqual(triggeringMatch("is the a", "Validates SQL queries."), false);
     });
 
