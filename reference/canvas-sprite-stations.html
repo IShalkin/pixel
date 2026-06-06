@@ -378,7 +378,7 @@
         <div class="sb-head">
           <div>
             <h3 class="sb-title">Postav si SKILL.md</h3>
-            <p class="sb-sub">Tahle pravidla agent načte před každým dotazem. Zaškrtni co má hlídat — soubor vlevo dole se mění živě.</p>
+            <p class="sb-sub">Tahle pravidla agent načte před každým dotazem. Zaškrtni co má hlídat, soubor vlevo dole se mění živě.</p>
           </div>
         </div>
         <div class="sb-cols">
@@ -395,7 +395,7 @@
               <span id="sb-copied" class="copied">zkopírováno ✓</span>
             </div>
             <p class="sb-install">
-              Rozbal do <code>~/.claude/skills/</code> — Copilot v VS Code a Claude Code obě tu složku čtou.
+              Rozbal do <code>~/.claude/skills/</code>, Copilot v VS Code a Claude Code obě tu složku čtou.
               Pak se v Copilot Chatu zeptej: <em>„Vyrob mi top 10 zemí podle počtu útoků jako graf."</em>
             </p>
           </div>
@@ -442,7 +442,7 @@
         </div>
         <div id="dash-bars" class="dash-bars"></div>
         <div class="dash-foot">
-          tohle by ti mohl agent vygenerovat z jednoho promptu —
+          tohle by ti mohl agent vygenerovat z jednoho promptu,
           <em>pokud má SKILL.md, MCP a evals nastavené</em>.
         </div>
       </div>
@@ -464,7 +464,7 @@
           <p class="panel-sub">snowflake-czechitas · 3 nástroje</p>
           <div id="mcp-rows"></div>
           <div class="panel-footer">
-            Agent vybírá nástroj podle úkolu — ne náhodou.
+            Agent vybírá nástroj podle úkolu, ne náhodou.
           </div>
         </div>
         <div class="live-panel" id="evals-panel">
@@ -473,7 +473,7 @@
           <p class="panel-sub">post-query · 3 kontroly</p>
           <div id="evals-rows"></div>
           <div class="panel-footer">
-            Skill chytá <em>před</em> spuštěním. Evals kontrolují <em>po</em> — jestli výsledek dává smysl.
+            Skill chytá <em>před</em> spuštěním. Evals kontrolují <em>po</em>, jestli výsledek dává smysl.
           </div>
         </div>
       </div>
@@ -509,11 +509,17 @@ const ASSETS = {
 };
 
 const images = {};
+// Sprite art is OPTIONAL. The repo ships without the julia/ and office/ PNGs,
+// so by default we skip loading them entirely (no network requests, no 404s)
+// and draw every character procedurally. If you drop the sprites into assets/,
+// set USE_SPRITES = true to use them.
+const USE_SPRITES = false;
 function loadAll() {
-  return Promise.all(Object.entries(ASSETS).map(([k, src]) => new Promise((res, rej) => {
+  if (!USE_SPRITES) return Promise.resolve();
+  return Promise.all(Object.entries(ASSETS).map(([k, src]) => new Promise((res) => {
     const img = new Image();
     img.onload = () => { images[k] = img; res(); };
-    img.onerror = () => { console.warn("failed:", src); res(); }; // continue even on missing assets
+    img.onerror = () => { res(); }; // continue even on missing assets
     img.src = src;
   })));
 }
@@ -579,23 +585,23 @@ const state = {
   bubble: null,      // { text, x, y, ttl }
   log: [],           // ['ok|warn|fail|skill|info', text]
 
-  // MCP panel state — which tool is currently being highlighted
+  // MCP panel state, which tool is currently being highlighted
   mcpOpen: false,            // chest sprite open/closed
   mcpTool: null,             // null | "list_tables" | "describe_table" | "execute_query" | "blocked"
 
-  // MCP panel state — which tools have been used this run (persist after closeMcp)
+  // MCP panel state, which tools have been used this run (persist after closeMcp)
   // map: tool key → "used" | undefined
   toolStatus: {},
 
-  // Skill panel state — which rules have fired this run
+  // Skill panel state, which rules have fired this run
   // map: rule key → "pass" | "fail" | "skip" | null (untouched / pending)
   ruleStatus: {},
 
-  // Evals panel state — which evals fired this run
+  // Evals panel state, which evals fired this run
   // map: eval key → "pass" | "fail" | "skip" | null (untouched / pending)
   evalStatus: {},
 
-  // Whiteboard chart state — bars 0..5 drawn one by one
+  // Whiteboard chart state, bars 0..5 drawn one by one
   chartBars: 0,      // 0..5
   chartTone: "ok",   // "ok" | "warn" | "fail"
   chartShown: false,
@@ -613,7 +619,7 @@ const state = {
   dbScreen: null,
 
   // Teacher / evaluator. Walks in from the right edge to the dashboard
-  // when evalsOn fires — holds expected.json on a clipboard, compares
+  // when evalsOn fires, holds expected.json on a clipboard, compares
   // row-by-row, stamps the dashboard ✓ or ✗.
   teacher: null, // { x, y, walking, frame, frameTime, holdingCard, verdict }
   reportCard: null, // { lines: [{label, actual, expected, status}], tone }
@@ -623,7 +629,7 @@ const state = {
  * RULE METADATA (used by skill panel)
  * ═══════════════════════════════════════════════════════════════════ */
 
-// Czech labels match the Skill Builder app 1:1 — participants recognise their own words.
+// Czech labels match the Skill Builder app 1:1, participants recognise their own words.
 // `body` is the markdown bullet that lands in the generated SKILL.md.
 const RULES = [
   {
@@ -664,7 +670,7 @@ const RULES = [
     short: "render chart",
     tag: "RENDER_CHART",
     pattern: "result rows → dashboard",
-    body: "When the result is tabular (top-N or time series), render it on the dashboard as a bar chart — never dump raw rows into chat.",
+    body: "When the result is tabular (top-N or time series), render it on the dashboard as a bar chart, never dump raw rows into chat.",
   },
 ];
 
@@ -674,7 +680,7 @@ const TOOLS = [
   { key: "execute_query",  label: "execute_query",  sub: "spustí SQL na DB" },
 ];
 
-// Evals run AFTER the query — they catch silent failures the skill rules missed.
+// Evals run AFTER the query, they catch silent failures the skill rules missed.
 const EVALS = [
   { key: "rowCount",     label: "Počet řádků = očekávaný",      short: "row count",     tag: "expected vs actual" },
   { key: "schemaMatch",  label: "Schema = země + počet",        short: "schema match",  tag: "COUNTRY_TXT + n" },
@@ -744,7 +750,7 @@ function draw() {
   // ── Thinking visualizations (above stations) ──
   drawRecipeCard();
   drawToolbox();
-  // (DB monitor on canvas is decorative only — actual SQL/results stream
+  // (DB monitor on canvas is decorative only, actual SQL/results stream
   //  in the HTML db-terminal panel below the stage where they're readable.)
 
   // agent sprite
@@ -877,7 +883,7 @@ function drawDbMonitor() {
 
   // screen recess
   ctx.fillStyle = "#1a1814"; ctx.fillRect(bx + 2, by + 2, mw - 4, mh - 6);
-  // screen — bright cyan when terminal is live, otherwise dim
+  // screen, bright cyan when terminal is live, otherwise dim
   const term = document.getElementById("db-terminal");
   const live = !!term && !term.classList.contains("hidden") && !term.classList.contains("idle");
   ctx.fillStyle = live ? "#0e2838" : "#0e1822";
@@ -951,7 +957,7 @@ function drawWhiteboard() {
   ctx.textAlign = "start";
 }
 
-/* The teacher (evals.json). Procedural sprite, no spritesheet — drawn
+/* The teacher (evals.json). Procedural sprite, no spritesheet, drawn
  * directly so we can avoid shipping another asset. She wears a navy
  * blazer and carries a clipboard with the "expected" answer. Walks in
  * from off-screen right when evalsOn fires after the agent ships data. */
@@ -988,7 +994,7 @@ function drawTeacher() {
   ctx.fillRect(bx + 3, by + h - 2, 5, 2);
   ctx.fillRect(bx + 10, by + h - 2, 5, 2);
 
-  // blazer body — navy
+  // blazer body, navy
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx + 2, by + 14, w - 4, 11);
   // lapel V (lighter)
@@ -998,7 +1004,7 @@ function drawTeacher() {
   ctx.fillStyle = "#d4452f";
   ctx.fillRect(bx + 8, by + 16, 2, 8);
 
-  // arms — same blazer color
+  // arms, same blazer color
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx,        by + 15, 3, 8);
   ctx.fillRect(bx + w - 3, by + 15, 3, 8);
@@ -1033,7 +1039,7 @@ function drawTeacher() {
   ctx.fillStyle = "#e8b894";
   ctx.fillRect(bx + 7, by + 11, 4, 3);
 
-  // head — skin tone
+  // head, skin tone
   ctx.fillStyle = "#e8b894";
   ctx.fillRect(bx + 4, by + 2, 10, 10);
   // hair (brown bob, distinct from Julia's blonde)
@@ -1095,8 +1101,8 @@ function drawTeacher() {
 }
 
 // Report card: floats above the whiteboard while the teacher grades.
-// Two columns — actual (left, agent's number) vs expected (right, the
-// truth from the test fixture) — with row-level pass/fail markers.
+// Two columns, actual (left, agent's number) vs expected (right, the
+// truth from the test fixture), with row-level pass/fail markers.
 function drawReportCard() {
   if (!state.reportCard) return;
   const card = state.reportCard;
@@ -1117,7 +1123,7 @@ function drawReportCard() {
   ctx.lineWidth = 1;
   ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
 
-  // header band — navy, like the teacher's blazer
+  // header band, navy, like the teacher's blazer
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx, by, w, headH);
   ctx.fillStyle = "#fdfaf5";
@@ -1145,14 +1151,14 @@ function drawReportCard() {
     else if (ln.status === "pass") col = "#3a7a3a";
     else if (ln.status === "skip") col = "#8a8478";
     ctx.fillStyle = col;
-    ctx.fillText(ln.actual ?? "—", bx + 70, ly + 4);
+    ctx.fillText(ln.actual ?? "-", bx + 70, ly + 4);
     ctx.fillStyle = "#1a1814";
-    ctx.fillText(ln.expected ?? "—", bx + 128, ly + 4);
+    ctx.fillText(ln.expected ?? "-", bx + 128, ly + 4);
     // marker on far right
     let mark = "·", mcol = "#bba";
     if (ln.status === "pass") { mark = "✓"; mcol = "#3a7a3a"; }
     else if (ln.status === "fail") { mark = "✗"; mcol = "#d4452f"; }
-    else if (ln.status === "skip") { mark = "–"; mcol = "#bba"; }
+    else if (ln.status === "skip") { mark = "-"; mcol = "#bba"; }
     ctx.fillStyle = mcol;
     ctx.font = "bold 11px ui-monospace, monospace";
     ctx.fillText(mark, bx + w - 12, ly + 5);
@@ -1229,7 +1235,7 @@ function drawRecipeCard() {
     let mark = "", col = "#1a1814";
     if      (ln.status === "pass") { mark = "✓"; col = "#3a7a3a"; }
     else if (ln.status === "fail") { mark = "✗"; col = "#d4452f"; }
-    else if (ln.status === "skip") { mark = "–"; col = "#bba"; }
+    else if (ln.status === "skip") { mark = "-"; col = "#bba"; }
     ctx.fillStyle = col;
     ctx.font = "bold 9px ui-monospace, monospace";
     ctx.fillText(mark, cx + 1, cy + 8);
@@ -1248,7 +1254,7 @@ function drawToolbox() {
     { key: "describe_table", short: "describe"    },
     { key: "execute_query",  short: "execute"     },
   ];
-  // vertical column of 3 chips above the chest — clearer + no horizontal overlap
+  // vertical column of 3 chips above the chest, clearer + no horizontal overlap
   // chest sits LEFT of agent → chest center ≈ s.x - 21
   const chipW = 78, chipH = 14, gap = 2;
   const totalH = chipH * 3 + gap * 2;
@@ -1280,7 +1286,7 @@ function drawToolbox() {
 
 function drawAgent() {
   const a = state.agent;
-  // Always pick a directional sprite by facing — never the bundled-with-desk
+  // Always pick a directional sprite by facing, never the bundled-with-desk
   // juliaPC spritesheet (it draws the agent welded into a workstation, which
   // looks like a "spinning computer" at our small office stations).
   let sheet;
@@ -1305,14 +1311,14 @@ function drawAgent() {
   // Sheet layouts differ:
   //   Julia-Idle.png            128×32   →  4 frames of 32×32 in one row
   //   Julia_walk_<dir>.png      256×64   →  4 frames of 64×64 in one row
-  // Sample each sheet at its actual frame size — sampling 32×40 from the
+  // Sample each sheet at its actual frame size, sampling 32×40 from the
   // walk sheets used to splice half-of-frame-0 with the top of row-2,
   // chopping the sprite at the torso during the walk cycle.
   const cols = 4;
   const frameW = Math.floor(sheet.width / cols);
   const frameH = sheet.height;
   const sx = a.frame * frameW;
-  // Walk-sheet content sits roughly y=15..47 of a 64-px cell — anchor at
+  // Walk-sheet content sits roughly y=15..47 of a 64-px cell, anchor at
   // the visual feet (~ 0.74 × frameH) rather than the cell bottom so
   // the agent doesn't appear to float over the floor labels.
   const footAnchor = frameH > 32 ? Math.round(frameH * 0.74) : frameH;
@@ -1411,7 +1417,7 @@ function loop(t) {
   const dt = t - lastT;
   lastT = t;
 
-  // animate frames — walking is brisk, reading/tooling/drawing are slow.
+  // animate frames, walking is brisk, reading/tooling/drawing are slow.
   // Pure idle (standing still, no activity) freezes on frame 0 so the
   // agent stops looking like she's nervously bouncing in place.
   const a = state.agent;
@@ -1450,7 +1456,7 @@ function loop(t) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * STEP PRIMITIVES — building blocks for scenarios
+ * STEP PRIMITIVES, building blocks for scenarios
  * each returns a Promise that resolves when the step completes
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -1501,7 +1507,7 @@ function teacherSay(text, ms = 2600) {
   return wait(ms);
 }
 
-// Thought bubble — agent's internal reasoning. Cloud-shaped, blue text.
+// Thought bubble, agent's internal reasoning. Cloud-shaped, blue text.
 function think(text, ms = 3000) {
   state.bubble = { text, x: state.agent.x, y: state.agent.y, ttl: ms, kind: "thought" };
   return wait(ms);
@@ -1513,7 +1519,7 @@ function activity(name, ms) {
   return wait(ms).then(() => { state.agent.activity = "idle"; });
 }
 
-// Skill panel primitives — drive the HTML panel under the stage
+// Skill panel primitives, drive the HTML panel under the stage
 function clearRules() {
   state.ruleStatus = {};
   renderSkillPanel();
@@ -1531,11 +1537,11 @@ function setEval(key, status) {
 /* Teacher (evals.json) primitives.
  * She lives off-screen at the right edge until walkInTeacher pulls her
  * over to the dashboard. The clipboard appears in her hands once she
- * arrives — that's the "expected.json" reference she compares against. */
+ * arrives, that's the "expected.json" reference she compares against. */
 
 // Teacher stands at the top-left of the room, in clear floor space
 // above the agent's walking lane. She's a separate, visibly distinct
-// character — not blocking the dashboard, the whiteboard report card,
+// character, not blocking the dashboard, the whiteboard report card,
 // the agent's stations, or the agent's path along the bottom lane.
 const TEACHER_GRADE_X = 86;
 const TEACHER_Y = 158;
@@ -1551,7 +1557,7 @@ function spawnTeacher() {
     verdict: null,
   };
 }
-// Teacher is now permanent — kept for symmetry with spawnTeacher but
+// Teacher is now permanent, kept for symmetry with spawnTeacher but
 // no longer called from grading. Only resetAll() should call this.
 function despawnTeacher() {
   state.teacher = null;
@@ -1628,7 +1634,7 @@ async function runTeacherGrading(rows, opts = {}) {
 }
 
 
-// MCP panel primitives — drive the HTML panel + chest sprite on canvas
+// MCP panel primitives, drive the HTML panel + chest sprite on canvas
 function openMcp(tool = null) {
   state.mcpOpen = true;
   state.mcpTool = tool;
@@ -1648,7 +1654,7 @@ function closeMcp() {
   renderMcpPanel();
 }
 
-// Recipe-card primitives — drive the SKILL station "thinking" overlay
+// Recipe-card primitives, drive the SKILL station "thinking" overlay
 function openRecipe() {
   state.recipeCard = {
     lines: RULES.map(r => ({
@@ -1664,7 +1670,7 @@ function setRecipeLine(key, status) {
 }
 function closeRecipe() { state.recipeCard = null; }
 
-// DB terminal primitives — drive the HTML console panel under the stage.
+// DB terminal primitives, drive the HTML console panel under the stage.
 // Tiny canvas monitor stays as decoration on the desk; the readable action
 // happens in the terminal so participants can actually parse SQL and rows.
 function showDbTerminal(toolLabel = "mcp-snowflake · execute_query") {
@@ -1723,7 +1729,7 @@ async function streamDbRows(rows, msPerRow = 320) {
   }
 }
 // Back-compat shims (state.dbScreen no longer drawn on canvas, but a few
-// scenario branches read it elsewhere — keep the no-op API).
+// scenario branches read it elsewhere, keep the no-op API).
 function openDbScreen() { /* terminal opens via showDbTerminal in scenarios */ }
 function closeDbScreen() { /* terminal closes via hideDbTerminal in scenarios */ }
 
@@ -1741,12 +1747,12 @@ function clearChart() {
   state.chartShown = false;
 }
 
-// Full HTML dashboard — the "this is what you can build" payoff.
+// Full HTML dashboard, the "this is what you can build" payoff.
 // Renders real numbers below the stage when a clean run finishes.
 // Scenario A = top-10 countries by attack count.
 // Scenario C = JOIN preview (country code → resolved name + attack count).
 //   When the JOIN runs against COUNTRY_DIRTYDATA, the same code resolves
-//   to two names — that's the "leak" learners can spot in the preview.
+//   to two names, that's the "leak" learners can spot in the preview.
 const TOP10 = [
   { country: "Iraq",        n: 15400 },
   { country: "Afghanistan", n: 12970 },
@@ -1867,7 +1873,7 @@ function renderSkillPanel() {
       icon = "·";
     } else if (status === "pass")  { cls += " fired-pass"; icon = "✓"; }
     else if (status === "fail")    { cls += " fired-fail"; icon = "✗"; }
-    else if (status === "skip")    { cls += " skipped";    icon = "–"; }
+    else if (status === "skip")    { cls += " skipped";    icon = "-"; }
     return `<div class="${cls}">
       <div class="icon">${icon}</div>
       <div class="label">${escHtml(r.label)}<small>${escHtml(r.pattern)}</small></div>
@@ -1910,7 +1916,7 @@ function renderEvalsPanel() {
       cls += " disabled";
     } else if (status === "pass") { cls += " fired-pass"; icon = "✓"; }
     else if (status === "fail")   { cls += " fired-fail"; icon = "✗"; }
-    else if (status === "skip")   { cls += " skipped";    icon = "–"; }
+    else if (status === "skip")   { cls += " skipped";    icon = "-"; }
     return `<div class="${cls}">
       <div class="icon">${icon}</div>
       <div class="label">${escHtml(e.label)}<small>${escHtml(e.tag)}</small></div>
@@ -1923,7 +1929,7 @@ function escHtml(s) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * SCENARIOS — narrative coherent with stack-trace demo
+ * SCENARIOS, narrative coherent with stack-trace demo
  * ═══════════════════════════════════════════════════════════════════ */
 
 /* Pre-mark all four rules as "pending" for this run so the panel shows
@@ -1940,7 +1946,7 @@ function beginRun() {
   state.recipeCard = null;
   state.toolbox = null;
   state.dbScreen = null;
-  // Teacher is permanent — clear the report card + verdict but keep her in the room.
+  // Teacher is permanent, clear the report card + verdict but keep her in the room.
   spawnTeacher();
   hideFullDashboard();
   hideDbTerminal();
@@ -1975,12 +1981,12 @@ async function walkSkillStation(predicates) {
     if (verdict === "block") {
       setCheck(r.key, "fail");
       setRecipeLine(r.key, "fail");
-      logLine("fail", `pravidlo „${r.short}" — blokuje SQL`);
+      logLine("fail", `pravidlo „${r.short}", blokuje SQL`);
       blockedBy = blockedBy || r;
     } else if (verdict === "rewrite") {
       setCheck(r.key, "pass");
       setRecipeLine(r.key, "pass");
-      logLine("ok", `pravidlo „${r.short}" — přepsalo SQL`);
+      logLine("ok", `pravidlo „${r.short}", přepsalo SQL`);
     } else {
       setCheck(r.key, "pass");
       setRecipeLine(r.key, "pass");
@@ -1999,27 +2005,27 @@ async function useTool(tool) {
 
 async function runScenarioA() {
   // Clean path: SELECT COUNTRY_TXT, COUNT(*) FROM TEROR GROUP BY COUNTRY_TXT ORDER BY 2 DESC LIMIT 10
-  // No JOIN with COUNTRY needed — COUNTRY_TXT already lives in TEROR. All 4 rules pass green.
+  // No JOIN with COUNTRY needed, COUNTRY_TXT already lives in TEROR. All 4 rules pass green.
   beginRun();
 
   await gotoStation("inbox");
   await say("nový prompt!", 900);
   logLine("info", "PROMPT: Top 10 zemí podle počtu útoků");
-  await think("aha — chce top-10 zemí.\npotřebuju COUNT z TEROR\na seřadit DESC", 2200);
+  await think("aha, chce top-10 zemí.\npotřebuju COUNT z TEROR\na seřadit DESC", 2200);
 
   if (state.skillOn) {
-    await think("nejdřív checklist —\nco SKILL zakazuje?", 1600);
+    await think("nejdřív checklist,\nco SKILL zakazuje?", 1600);
     await walkSkillStation({});
-    await think("vše zelené —\nmůžu jít na MCP", 1500);
+    await think("vše zelené,\nmůžu jít na MCP", 1500);
   } else {
-    logLine("warn", "skill je vypnut — žádná pre-flight kontrola");
-    await think("skill je OFF —\npreflight přeskakuju", 1400);
+    logLine("warn", "skill je vypnut, žádná pre-flight kontrola");
+    await think("skill je OFF,\npreflight přeskakuju", 1400);
   }
 
   if (!state.mcpOn) {
     await gotoStation("mcp");
-    await say("MCP off — nemůžu na DB", 1500);
-    logLine("fail", "MCP server je OFF — žádný execute_query");
+    await say("MCP off, nemůžu na DB", 1500);
+    logLine("fail", "MCP server je OFF, žádný execute_query");
     state.running = false; return;
   }
 
@@ -2027,11 +2033,11 @@ async function runScenarioA() {
   openMcp();
   await think("MCP server zná 3 nástroje.\nkterý použiju?", 1800);
   await useTool("list_tables");
-  await think("1) list_tables —\njaké tabulky existují?", 1500);
+  await think("1) list_tables,\njaké tabulky existují?", 1500);
   await useTool("describe_table");
-  await think("2) describe_table TEROR —\njaké má sloupce?", 1500);
+  await think("2) describe_table TEROR,\njaké má sloupce?", 1500);
   await useTool("execute_query");
-  await think("3) execute_query —\nteď spustím SELECT", 1400);
+  await think("3) execute_query,\nteď spustím SELECT", 1400);
   logLine("info", "MCP: execute_query(SQL)");
   closeMcp();
 
@@ -2047,7 +2053,7 @@ async function runScenarioA() {
     "ORDER BY n DESC",
     "LIMIT 10;",
   ], 380);
-  await think("query odeslána —\nčekám na výsledek", 1400);
+  await think("query odeslána,\nčekám na výsledek", 1400);
   await streamDbRows([
     { text: "COUNTRY_TXT       N",        cls: "" },
     { text: "─────────────────────",     cls: "" },
@@ -2067,21 +2073,21 @@ async function runScenarioA() {
   let renderedChart = false;
   if (state.skillOn && state.rules.renderChart) {
     await gotoStation("board");
-    await say("pravidlo RENDER_CHART —\nkreslím graf", 1200);
+    await say("pravidlo RENDER_CHART,\nkreslím graf", 1200);
     await drawChartBar(chartTone);
     showFullDashboard("ok", "clean", "A");
-    logLine("ok", "DASHBOARD: top 10 zemí — ready to ship");
+    logLine("ok", "DASHBOARD: top 10 zemí, ready to ship");
     renderedChart = true;
   } else {
     const reason = !state.skillOn
-      ? "bez skillu nevím,\nco s daty —\nvrátím syrová čísla"
-      : "RENDER_CHART je OFF —\nvracím jen řádky";
+      ? "bez skillu nevím,\nco s daty,\nvrátím syrová čísla"
+      : "RENDER_CHART je OFF,\nvracím jen řádky";
     await think(reason, 2000);
     await say("Iraq · Afghan · Pak…", 1400);
     logLine("info", "raw rows: Iraq=15400, Afghanistan=12970, Pakistan=6112, …");
     logLine("warn", state.skillOn
       ? "bez RENDER_CHART pravidla: jen tabulka v chatu, žádný dashboard"
-      : "bez skillu: žádný dashboard — jen tabulka v chatu");
+      : "bez skillu: žádný dashboard, jen tabulka v chatu");
   }
 
   if (state.evalsOn) {
@@ -2091,9 +2097,9 @@ async function runScenarioA() {
       { key: "noSilentFail", label: "no drop",   actual: "no drops", expected: "no drops", verdict: "pass" },
     ], { headline: "perfekt!", finalVerdict: "pass" });
   } else if (renderedChart) {
-    logLine("warn", "evals OFF — nikdo nezkontroloval, jestli to číslo je správné");
+    logLine("warn", "evals OFF, nikdo nezkontroloval, jestli to číslo je správné");
   } else {
-    logLine("info", "evals OFF (čistá query — prošlo by stejně)");
+    logLine("info", "evals OFF (čistá query, prošlo by stejně)");
   }
 
   await gotoStation("start");
@@ -2101,12 +2107,12 @@ async function runScenarioA() {
 }
 
 async function runScenarioB() {
-  // Composite: DROP TABLE TEROR2_OLD — both no_destructive AND no_old_tables fire.
+  // Composite: DROP TABLE TEROR2_OLD, both no_destructive AND no_old_tables fire.
   beginRun();
   await gotoStation("inbox");
   await say("smaž tu starou", 1000);
   logLine("info", "PROMPT: DROP TABLE TEROR2_OLD;");
-  await think("DROP TABLE — to je\ndestruktivní operace.\nzkontroluju checklist", 2400);
+  await think("DROP TABLE, to je\ndestruktivní operace.\nzkontroluju checklist", 2400);
 
   if (state.skillOn) {
     const blocked = await walkSkillStation({
@@ -2115,30 +2121,30 @@ async function runScenarioB() {
     });
     if (blocked) {
       await think("dvě pravidla padla:\nDROP zakázán + _OLD\ntabulky chráněné", 2400);
-      await say("STOP — 2 pravidla!", 1300);
-      logLine("ok", "blokováno před MCP — ušetřené tokeny + tabulka přežila");
+      await say("STOP, 2 pravidla!", 1300);
+      logLine("ok", "blokováno před MCP, ušetřené tokeny + tabulka přežila");
       await wait(700);
       await gotoStation("start");
       state.running = false; return;
     }
-    logLine("warn", "obě destruktivní pravidla jsou OFF — průchod");
+    logLine("warn", "obě destruktivní pravidla jsou OFF, průchod");
     await wait(500);
   } else {
-    await think("skill je OFF —\nnikdo to nechytne…", 1600);
-    logLine("warn", "skill je OFF — destruktivní SQL projde");
+    await think("skill je OFF,\nnikdo to nechytne…", 1600);
+    logLine("warn", "skill je OFF, destruktivní SQL projde");
   }
 
   if (!state.mcpOn) {
     await gotoStation("mcp");
     await say("MCP off", 1100);
-    logLine("ok", "MCP server je OFF — tabulka přežila omylem");
+    logLine("ok", "MCP server je OFF, tabulka přežila omylem");
     state.running = false; return;
   }
 
   await gotoStation("mcp");
   openMcp();
   await useTool("execute_query");
-  await think("execute_query —\nposílám DROP", 1400);
+  await think("execute_query,\nposílám DROP", 1400);
   closeMcp();
   await gotoStation("db");
   state.agent.facing = "left";
@@ -2150,13 +2156,13 @@ async function runScenarioB() {
   ], 460);
   await wait(700);
   await streamDbRows([
-    { text: "⚠ TABLE DROPPED",          cls: "fail" },
+    { text: "! TABLE DROPPED",          cls: "fail" },
     { text: "TEROR2_OLD: 26 828 rows",  cls: "fail" },
     { text: "→ irreversible",           cls: "fail" },
   ], 420);
   await wait(900);
   state.agent.activity = "idle";
-  logLine("fail", "TEROR2_OLD DROPPED — guardrail bypassed");
+  logLine("fail", "TEROR2_OLD DROPPED, guardrail bypassed");
   if (state.evalsOn) {
     await runTeacherGrading([
       { key: "rowCount",     label: "row count", actual: "n/a",   expected: "26 828",   verdict: "skip" },
@@ -2164,7 +2170,7 @@ async function runScenarioB() {
       { key: "noSilentFail", label: "no drop",   actual: "DROP",  expected: "no drops", verdict: "fail" },
     ], { headline: "tabulka je pryč.\nevals už nepomůžou.", finalVerdict: "fail" });
   } else {
-    logLine("fail", "evals OFF — DROP prošel a nikdo to nezkontroloval");
+    logLine("fail", "evals OFF, DROP prošel a nikdo to nezkontroloval");
   }
 
   await gotoStation("start");
@@ -2172,7 +2178,7 @@ async function runScenarioB() {
 }
 
 async function runScenarioC() {
-  // JOIN COUNTRY_DIRTYDATA — query technically succeeds, but evals catch the dirty join
+  // JOIN COUNTRY_DIRTYDATA, query technically succeeds, but evals catch the dirty join
   // (count=408 rows ≠ 204), unless skill rewrote it first.
   const useClean = (state.skillOn && state.rules.preferCleanLookup);
   beginRun();
@@ -2187,11 +2193,11 @@ async function runScenarioC() {
       preferCleanLookup: "rewrite",  // matches DIRTYDATA → swaps to COUNTRY (only fires when toggle is on)
     });
     if (!state.rules.preferCleanLookup) {
-      logLine("warn", "prefer COUNTRY je OFF — agent použije DIRTYDATA");
+      logLine("warn", "prefer COUNTRY je OFF, agent použije DIRTYDATA");
     }
     await wait(400);
   } else {
-    logLine("warn", "skill je OFF — žádný preflight");
+    logLine("warn", "skill je OFF, žádný preflight");
   }
 
   if (!state.mcpOn) {
@@ -2228,14 +2234,14 @@ async function runScenarioC() {
     await streamDbRows([
       { text: "→ 408 rows · duplicates",         cls: "warn" },
       { text: "schema: COUNTRY_DIRTYDATA",       cls: "warn" },
-      { text: "(očekáváno 204 — leak detected)", cls: "warn" },
+      { text: "(očekáváno 204, leak detected)", cls: "warn" },
     ], 320);
   }
   logLine("info", "DB → joined " + tbl);
   await wait(900);
   state.agent.activity = "idle";
 
-  // Decide tone before drawing — dirty join + no eval rescue ⇒ silent fail
+  // Decide tone before drawing, dirty join + no eval rescue ⇒ silent fail
   let chartTone = "ok";
   if (!useClean && !state.evalsOn) chartTone = "fail";
   else if (!useClean && state.evalsOn) chartTone = "warn";
@@ -2253,7 +2259,7 @@ async function runScenarioC() {
     await say("data hotová", 1200);
     logLine("warn", state.skillOn
       ? "bez RENDER_CHART pravidla: jen řádky v chatu, žádný dashboard"
-      : "bez skillu: jen řádky v chatu — žádný dashboard");
+      : "bez skillu: jen řádky v chatu, žádný dashboard");
   }
 
   if (state.evalsOn) {
@@ -2268,7 +2274,7 @@ async function runScenarioC() {
         { key: "rowCount",     label: "row count", actual: "408",      expected: "204",      verdict: "fail" },
         { key: "schemaMatch",  label: "schema",    actual: "ok",       expected: "ok",       verdict: "pass" },
         { key: "noSilentFail", label: "no drop",   actual: "no drops", expected: "no drops", verdict: "pass" },
-      ], { headline: "408 ≠ 204 —\nDIRTYDATA prosákla!", finalVerdict: "fail" });
+      ], { headline: "408 ≠ 204,\nDIRTYDATA prosákla!", finalVerdict: "fail" });
     }
   } else if (!useClean && renderedChart) {
     logLine("fail", "evals OFF + DIRTYDATA → tichý fail v dashboardu");
@@ -2331,12 +2337,12 @@ function generateSkillMarkdown() {
   lines.push("# SQL Review");
   lines.push("");
   if (active.length === 0) {
-    lines.push("# (žádná pravidla — agent pošle SQL přímo na DB bez kontroly)");
+    lines.push("# (žádná pravidla, agent pošle SQL přímo na DB bez kontroly)");
   } else {
     lines.push("Před spuštěním každého dotazu:");
     lines.push("");
     for (const r of active) {
-      lines.push(`- **${r.tag}** — ${r.body}`);
+      lines.push(`- **${r.tag}**, ${r.body}`);
     }
   }
   lines.push("");
@@ -2383,7 +2389,7 @@ function highlightSkillMd(md) {
   }).join("\n");
 }
 
-/* CRC-32 (IEEE 802.3 polynomial) — used by ZIP per-file checksums. */
+/* CRC-32 (IEEE 802.3 polynomial), used by ZIP per-file checksums. */
 const CRC32_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -2400,7 +2406,7 @@ function crc32(bytes) {
 }
 
 /* Minimal store-only ZIP writer. Files: [{name, data: Uint8Array}].
- * Store-only (compression method 0) keeps the implementation under 60 lines —
+ * Store-only (compression method 0) keeps the implementation under 60 lines,
  * for a few KB of markdown the size penalty is negligible.
  */
 function buildZip(files) {
@@ -2478,7 +2484,7 @@ function downloadSkillMd() {
     "",
     "## Instalace (Claude Code, GitHub Copilot v VS Code)",
     "",
-    "Zkopíruj celou složku `sql-review/` do jednoho z těchto míst —",
+    "Zkopíruj celou složku `sql-review/` do jednoho z těchto míst,",
     "Copilot i Claude Code obě cesty čtou:",
     "",
     "- **Globálně** (funguje ve všech projektech): `~/.claude/skills/sql-review/`",
@@ -2492,8 +2498,8 @@ function downloadSkillMd() {
     "",
     "## Co je uvnitř",
     "",
-    "`sql-review/SKILL.md` — pět pravidel, která jste si zaškrtly v Czechitas Pixel Agent demu.",
-    "Každé pravidlo je jeden bullet — měň je, mažte, přidávejte vlastní.",
+    "`sql-review/SKILL.md`, pět pravidel, která jste si zaškrtly v Czechitas Pixel Agent demu.",
+    "Každé pravidlo je jeden bullet, měň je, mažte, přidávejte vlastní.",
     "",
     "Vygenerováno z https://ishalkin.github.io/czechitas-pixel-agent/",
   ].join("\n");
