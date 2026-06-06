@@ -73,6 +73,22 @@ controls the pace (Next, or a toggle, or a scrubber). This is non-negotiable
 across every medium: the value is in seeing the mechanism unfold, not in watching
 an animation finish.
 
+**Prefer a manipulable model over a slideshow.** "Steppable" is the floor, not the
+ceiling, and the recurring failure is to read it as "a Next button that advances
+linear slides" and stop there. If the concept has control variables (a threshold,
+a dose, a rate, a gradient strength, the position of a source, a toggle that
+recomputes an outcome), the strongest version lets the audience SET those and
+watch the scene recompute live, so they discover the rule by playing with it
+instead of being walked past it. Reserve linear Next-stepping for a genuinely
+ordered sequence of events (a fold that has to happen before a tube can close, a
+request falling through layers in order). Most concepts have both: a short ordered
+intro, then a sandbox. The DOM verdict engine (toggle a rule, the verdict
+re-resolves) and a canvas demo with sliders that move domain boundaries in real
+time are the same idea in two media. A useful test while designing: name the two
+or three variables a domain expert would reach for to probe this idea, and make at
+least one of them something the audience controls directly, not just a value the
+narration changes for them.
+
 ### 5. Add contrast only if the concept has a "what goes wrong".
 If the lesson includes a guardrail or a failure mode, let the audience break it
 and watch the bad outcome the lesson warned about reappear. This is powerful but
@@ -381,7 +397,12 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
 2. Step through the WHOLE situation: nothing flashes by, the audience controls the
    pace, the "aha" actually lands at the end, no console errors. If there is a
    contrast/sabotage control, confirm it changes the outcome. If there is a
-   verdict engine, confirm `?test=1` prints all-passed.
+   verdict engine, confirm `?test=1` prints all-passed. Confirm the audience can
+   set at least one control variable themselves and the scene recomputes live
+   (not merely a Next button advancing fixed slides), unless the concept is a
+   genuinely linear sequence with no control variables. If you find yourself with
+   only a Next button on a concept that HAS a knob (a threshold, a dose, a source
+   position), that is the slideshow failure: add the knob.
 3. Grep the file for the em-dash (U+2014) and en-dash (U+2013) (must be zero) and
    for stray emoji.
 4. If the page language is not English, confirm every visible string is translated
