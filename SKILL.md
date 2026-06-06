@@ -87,6 +87,55 @@ Only now do you pick the form. Options, not a menu to default through:
 
 State your pick and the one-line reason before building.
 
+**Know when this skill is the wrong tool, and say so instead of forcing it.** The
+method (a hand-drawn canvas or DOM scene, stepped through) is built for showing a
+MECHANISM, a process with a shape and a mood. It is not a charting library and not a
+3D engine, and several concept shapes will fight it. Recognize these at step 3 and
+either escalate to the right tool or reframe the concept, rather than shipping a
+fragile hand-rolled version:
+- **Precise quantitative data on real axes.** If the "aha" rides on exact values,
+  tick-marked axes, a nice-number scale, a log axis, or a distribution's true shape
+  ("0.37 vs 0.41", "this is skewed"), you will hand-roll a buggy chart with no
+  scale function. Reach for a real charting library (the `czechitas` skill loads
+  Plotly for exactly this) and accept the one CDN dependency, or keep the quantity
+  QUALITATIVE (a wash that is "more" or "less", not a number you must read off).
+  A drawn field is honest only when the lesson is "which way it leans", not "by how
+  much".
+- **Dense graphs or networks.** The AABB label nudger handles a handful of labels;
+  it has no leader lines and no force fallback, and there is no graph-layout code
+  here (force-directed, hierarchical, DAG layering, edge routing). Five nodes you
+  place by hand; fifty collapse into a hairball. If the concept IS a network, that
+  is a layout-engine job, not this skill.
+- **Genuinely 3D structure.** Canvas 2D only, no WebGL. A concept that is 3D in its
+  bones (a folded protein, orbits, a 3D vector field, a rotating molecule) will come
+  out as a hand-flattened projection that is both brittle and usually read wrong.
+  Use a 2D SLICE or cross-section if one carries the idea (the neural-tube demo
+  worked because a transverse slice was the honest view); otherwise this is the
+  wrong medium.
+- **Deep zoom over a huge coordinate space.** The logical canvas is one fixed size
+  and the "camera" is a pan-focus, not a real zoomable viewport. A fractal, a
+  genome browser, a map from country to street needs true zoom/level-of-detail,
+  which this skill does not provide.
+- **Continuous dynamics where the form IS the point.** "One action equals one step"
+  is right for ordered events, but some concepts live in a continuous signal (a
+  decaying oscillation, a waveform, phase, feedback ring). Forcing them into
+  discrete Next-steps can destroy the very shape that is the "aha". Prefer a Play
+  that runs the continuous motion with a Pause and a scrubber, and do not chop a
+  smooth phenomenon into beats just to obey the rule.
+- **Thousands of particles or per-pixel fields.** The pause-aware `tween` is for
+  choreographed beats, not a live sim of thousands of particles or per-pixel work
+  (reaction-diffusion, a full-resolution cellular automaton). Those need
+  `ImageData`/typed arrays and a real rAF loop, which is outside what is documented
+  here; expect a performance wall.
+- **Heavy set math, formulas, code, or tables.** `fillText` is miserable for typeset
+  formulas, matrices, syntax-highlighted code, or real tables. The DOM side is a
+  verdict engine, not rich typography. If the content is fundamentally a typeset
+  formula, that wants KaTeX/MathJax (a CDN dependency, in tension with the
+  single-file rule) or it wants to be a different artifact.
+The honest move when a concept lands here is to tell the user "this one is not a good
+fit for a hand-drawn stepped scene because X; the better tool is Y", not to ship a
+hand-rolled chart/graph/3D view that quietly misrepresents the data.
+
 ### 4. Make it steppable, never a movie.
 One action equals one revealed step. Nothing important flashes by. The audience
 controls the pace (Next, or a toggle, or a scrubber). This is non-negotiable
@@ -396,6 +445,20 @@ named. The fix that made it land: paint each gradient as a vertical wash behind 
 actors, and tie its opacity to the live source state so toggling a source off or
 dialing a slider visibly drains its field. When the field is the concept, make the
 field something the eye can see change.
+
+But a drawn field can lie more convincingly than a label, so encode it honestly.
+Opacity-as-magnitude is perceptually NON-linear (the eye does not read twice the
+alpha as twice the value), so use it for "more here, less there", not for a quantity
+someone is meant to compare by amount; if the amount matters, that is the
+quantitative case above, give it a scale and a legend. Two semi-transparent washes
+overlapping produce a THIRD colour that the eye reads as a third category, not as a
+sum, so when two fields cross, make the overlap legible on purpose (a deliberate
+blend, or keep them on separate visual channels) rather than hoping it reads as
+addition. Pick a colour-blind-safe ramp and a sequential ramp for a one-directional
+quantity vs a diverging ramp for something with a meaningful midpoint, and if the
+colour or opacity carries meaning at all, give the page a legend that says what the
+colour means. A field the eye can see change is the goal; a field the eye
+mis-reads is worse than an honest label.
 
 **Fill the frame, do not leave the hero in a corner.** A canvas that is mostly empty
 paper with the subject crammed into one quadrant reads as unfinished, not as
