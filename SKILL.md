@@ -36,6 +36,26 @@ them for HOW they teach. Invent your own situation and look.
 
 ## The method (this is the work)
 
+### 0. Ask who it is for, before anything else.
+Do NOT design in a vacuum. The same concept becomes a different page for a
+first-year student, a domain expert, a mixed conference audience, or a presenter
+driving it from a stage, and you cannot guess which from the concept alone. Ask
+the user up front (one short question) at least:
+- **Who is the audience and their level?** (novices needing analogies and expanded
+  jargon, peers who want the real terms kept, a lay public wanting only the "aha".)
+- **What is the setting?** (self-paced on their own screen, vs presented live from
+  a stage, which wants bigger type, an autoplay-with-pause story, and fewer fiddly
+  controls.) The deployed-page language question (see Localization) belongs here too.
+
+The answer sets vocabulary (keep `SHH`/`idempotent`/`quorum` vs gloss every term),
+depth (mechanism in full vs just the one surprise), reading level, pacing, and how
+much interaction to expose. If the user says "doesn't matter" or gives a domain
+(e.g. "internal Accenture, technical"), infer a sensible level from that and STATE
+the assumption you are building to in one line, rather than silently defaulting.
+Carry the chosen audience into every later step: the situation, the "aha" wording,
+the caption copy, and the verification all get judged against THAT audience, not a
+generic one.
+
 ### 1. Find the situation. This is where most of the thinking goes.
 Brainstorm a concrete, familiar, small scene that makes the concept's core
 tension VISIBLE. The concept is abstract; the situation is something a person can
@@ -73,21 +93,37 @@ controls the pace (Next, or a toggle, or a scrubber). This is non-negotiable
 across every medium: the value is in seeing the mechanism unfold, not in watching
 an animation finish.
 
-**Prefer a manipulable model over a slideshow.** "Steppable" is the floor, not the
-ceiling, and the recurring failure is to read it as "a Next button that advances
-linear slides" and stop there. If the concept has control variables (a threshold,
+**A self-playing STORY is usually the primary feature; build it first.** The thing
+that makes these pages land is a narrative that visibly unfolds, an actor doing a
+loop, a process running its course, a scene transforming beat by beat, and "the
+audience controls the pace" means they can Play it, Pause on any beat, step it by
+hand, and replay it, NOT that the only way to see anything is to click Next eight
+times. The recurring failure (caught more than once) is to ship the manual
+stepper alone and call it interactive: it reads as a controlled inspection, not a
+story, and users rightly say "I expected it to animate / where is the plot."
+So unless the concept is genuinely static, give it a real autoplay: a Play button
+that walks the beats on its own, dwelling on each long enough to read, with a
+Pause that truly freezes (use the abortable, elapsed-time `tween`/`wait` technique,
+never raw `setTimeout`, so Pause does not fast-forward), and any manual action
+(Next, a toggle, a drag) quietly pauses autoplay so the two never fight. A presenter
+audience (see step 0) needs this even more: they Play, then pause to talk over each
+beat. Build the playable story first, prove it carries the "aha" on its own, and
+only then layer controls on top.
+
+**Then prefer a manipulable model over a slideshow for the controls.** "Steppable"
+is the floor, not the ceiling. If the concept has control variables (a threshold,
 a dose, a rate, a gradient strength, the position of a source, a toggle that
-recomputes an outcome), the strongest version lets the audience SET those and
-watch the scene recompute live, so they discover the rule by playing with it
-instead of being walked past it. Reserve linear Next-stepping for a genuinely
-ordered sequence of events (a fold that has to happen before a tube can close, a
-request falling through layers in order). Most concepts have both: a short ordered
-intro, then a sandbox. The DOM verdict engine (toggle a rule, the verdict
-re-resolves) and a canvas demo with sliders that move domain boundaries in real
-time are the same idea in two media. A useful test while designing: name the two
-or three variables a domain expert would reach for to probe this idea, and make at
-least one of them something the audience controls directly, not just a value the
-narration changes for them.
+recomputes an outcome), the strongest version ALSO lets the audience SET those and
+watch the scene recompute live, so they can probe the rule by playing with it after
+the story has shown it. Reserve linear Next-stepping for a genuinely ordered
+sequence of events (a fold that has to happen before a tube can close, a request
+falling through layers in order). The ideal shape is BOTH: a self-playing story as
+the spine, plus a sandbox of real controls hanging off it, not one or the other.
+The DOM verdict engine (toggle a rule, the verdict re-resolves) and a canvas demo
+with sliders that move domain boundaries in real time are the same idea in two
+media. A useful test while designing: name the two or three variables a domain
+expert would reach for to probe this idea, and make at least one of them something
+the audience controls directly, not just a value the narration changes for them.
 
 ### 5. Add contrast only if the concept has a "what goes wrong".
 If the lesson includes a guardrail or a failure mode, let the audience break it
@@ -358,9 +394,10 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
 
 ## Generation procedure
 
-1. **Brainstorm the situation and the "aha" first**, before any code or any
-   reference. Write them down in one or two lines. If they are weak, the page will
-   be weak no matter how polished.
+1. **Ask who it is for and in what setting** (method step 0), then **brainstorm the
+   situation and the "aha"** for THAT audience, before any code or any reference.
+   Write the audience, the situation, and the "aha" down in one or two lines. If
+   they are weak, the page will be weak no matter how polished.
 2. **Pick the medium (method step 3)** and say it to the user in one line with the
    reason.
 3. **Read at most the one or two references** whose method-move matches, for ideas
@@ -397,12 +434,15 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
 2. Step through the WHOLE situation: nothing flashes by, the audience controls the
    pace, the "aha" actually lands at the end, no console errors. If there is a
    contrast/sabotage control, confirm it changes the outcome. If there is a
-   verdict engine, confirm `?test=1` prints all-passed. Confirm the audience can
-   set at least one control variable themselves and the scene recomputes live
-   (not merely a Next button advancing fixed slides), unless the concept is a
-   genuinely linear sequence with no control variables. If you find yourself with
-   only a Next button on a concept that HAS a knob (a threshold, a dose, a source
-   position), that is the slideshow failure: add the knob.
+   verdict engine, confirm `?test=1` prints all-passed. Unless the concept is
+   genuinely static, confirm there is a self-playing story: Play walks the beats on
+   its own, Pause truly freezes on a beat (does not fast-forward when resumed), a
+   manual action pauses autoplay instead of fighting it, and the "aha" lands from
+   Play alone without the user having to click Next. Then confirm the audience can
+   also set at least one control variable themselves and the scene recomputes live,
+   unless the concept is a genuinely linear sequence with no control variables.
+   Shipping only a Next button on a concept that has a story or a knob is the
+   failure this checks for: add the autoplay, add the knob.
 3. Grep the file for the em-dash (U+2014) and en-dash (U+2013) (must be zero) and
    for stray emoji.
 4. If the page language is not English, confirm every visible string is translated
@@ -410,6 +450,11 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
 5. Sanity-check the deliverable against the concept: does it teach THIS idea, or
    did a reference's machinery leak in? Remove anything that does not serve the
    "aha".
+6. Sanity-check against the AUDIENCE you asked about: is the vocabulary, depth, and
+   pacing right for them (jargon glossed for novices vs kept for peers), and does
+   the setting fit (large type and an autoplay-with-pause story for a live
+   presenter, calmer self-paced controls for a solo reader)? If you never asked who
+   it is for, that is a process miss, not a style nitpick.
 
 ## What this skill is NOT
 
