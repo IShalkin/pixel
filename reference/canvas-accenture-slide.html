@@ -582,7 +582,7 @@
         <div class="sb-head">
           <div>
             <h3 class="sb-title">Build the accenture-pptx SKILL.md</h3>
-            <p class="sb-sub">Five rule groups. The agent reads them before assembling every slide. Tick what it should enforce — the SKILL.md preview updates live.</p>
+            <p class="sb-sub">Five rule groups. The agent reads them before assembling every slide. Tick what it should enforce, the SKILL.md preview updates live.</p>
           </div>
         </div>
         <div class="sb-cols">
@@ -599,7 +599,7 @@
               <span id="sb-copied" class="copied">copied ✓</span>
             </div>
             <p class="sb-install">
-              Unzip into <code>~/.claude/skills/</code> — both Copilot in VS Code and Claude Code read that folder.
+              Unzip into <code>~/.claude/skills/</code>, both Copilot in VS Code and Claude Code read that folder.
               Then ask in chat: <em>"Build me a hero slide for cloud strategy 2026."</em>
             </p>
           </div>
@@ -657,7 +657,7 @@
         </div>
         <div id="dash-bars" class="dash-bars"></div>
         <div class="dash-foot">
-          one prompt, one branded slide — <em>only if SKILL, MCP and evals are wired</em>.
+          one prompt, one branded slide, <em>only if SKILL, MCP and evals are wired</em>.
         </div>
       </div>
 
@@ -677,7 +677,7 @@
           <p class="panel-sub">canva + drawio · 3 tools</p>
           <div id="mcp-rows"></div>
           <div class="panel-footer">
-            The agent picks the right tool per task — logo, photo, diagram.
+            The agent picks the right tool per task, logo, photo, diagram.
           </div>
         </div>
         <div class="live-panel" id="evals-panel">
@@ -686,7 +686,7 @@
           <p class="panel-sub">post-build critic · 3 checks</p>
           <div id="evals-rows"></div>
           <div class="panel-footer">
-            Skill catches <em>before</em>. QA evals check <em>after</em> — color, type, layout.
+            Skill catches <em>before</em>. QA evals check <em>after</em>, color, type, layout.
           </div>
         </div>
       </div>
@@ -721,11 +721,17 @@ const ASSETS = {
 };
 
 const images = {};
+// Sprite art is OPTIONAL. The repo ships without the julia/ and office/ PNGs,
+// so by default we skip loading them entirely (no network requests, no 404s)
+// and draw every character procedurally. If you drop the sprites into assets/,
+// set USE_SPRITES = true to use them.
+const USE_SPRITES = false;
 function loadAll() {
-  return Promise.all(Object.entries(ASSETS).map(([k, src]) => new Promise((res, rej) => {
+  if (!USE_SPRITES) return Promise.resolve();
+  return Promise.all(Object.entries(ASSETS).map(([k, src]) => new Promise((res) => {
     const img = new Image();
     img.onload = () => { images[k] = img; res(); };
-    img.onerror = () => { console.warn("failed:", src); res(); }; // continue even on missing assets
+    img.onerror = () => { res(); }; // continue even on missing assets
     img.src = src;
   })));
 }
@@ -791,23 +797,23 @@ const state = {
   bubble: null,      // { text, x, y, ttl }
   log: [],           // ['ok|warn|fail|skill|info', text]
 
-  // MCP panel state — which tool is currently being highlighted
+  // MCP panel state, which tool is currently being highlighted
   mcpOpen: false,            // chest sprite open/closed
   mcpTool: null,             // null | "list_tables" | "describe_table" | "execute_query" | "blocked"
 
-  // MCP panel state — which tools have been used this run (persist after closeMcp)
+  // MCP panel state, which tools have been used this run (persist after closeMcp)
   // map: tool key → "used" | undefined
   toolStatus: {},
 
-  // Skill panel state — which rules have fired this run
+  // Skill panel state, which rules have fired this run
   // map: rule key → "pass" | "fail" | "skip" | null (untouched / pending)
   ruleStatus: {},
 
-  // Evals panel state — which evals fired this run
+  // Evals panel state, which evals fired this run
   // map: eval key → "pass" | "fail" | "skip" | null (untouched / pending)
   evalStatus: {},
 
-  // Whiteboard chart state — bars 0..5 drawn one by one
+  // Whiteboard chart state, bars 0..5 drawn one by one
   chartBars: 0,      // 0..5
   chartTone: "ok",   // "ok" | "warn" | "fail"
   chartShown: false,
@@ -825,7 +831,7 @@ const state = {
   dbScreen: null,
 
   // Teacher / evaluator. Walks in from the right edge to the dashboard
-  // when evalsOn fires — holds expected.json on a clipboard, compares
+  // when evalsOn fires, holds expected.json on a clipboard, compares
   // row-by-row, stamps the dashboard ✓ or ✗.
   teacher: null, // { x, y, walking, frame, frameTime, holdingCard, verdict }
   reportCard: null, // { lines: [{label, actual, expected, status}], tone }
@@ -835,12 +841,12 @@ const state = {
  * RULE METADATA (used by skill panel)
  * ═══════════════════════════════════════════════════════════════════ */
 
-// Czech labels match the Skill Builder app 1:1 — participants recognise their own words.
+// Czech labels match the Skill Builder app 1:1, participants recognise their own words.
 // `body` is the markdown bullet that lands in the generated SKILL.md.
 const RULES = [
   {
     key: "brandColors",
-    label: "Brand colors — Purple A100FF dominant, ≤5% secondary",
+    label: "Brand colors, Purple A100FF dominant, ≤5% secondary",
     short: "brand colors",
     tag: "BRAND_COLORS",
     pattern: "#A100FF · #460073 · #7500C0",
@@ -848,7 +854,7 @@ const RULES = [
   },
   {
     key: "typography",
-    label: "Typography — Graphik, sentence case, 10pt floor",
+    label: "Typography, Graphik, sentence case, 10pt floor",
     short: "typography",
     tag: "TYPOGRAPHY",
     pattern: "Graphik / Helvetica · 10pt min",
@@ -856,27 +862,27 @@ const RULES = [
   },
   {
     key: "layout",
-    label: "Layout — 0.45\"/0.35\" margins, squares not circles",
+    label: "Layout, 0.45\"/0.35\" margins, squares not circles",
     short: "layout",
     tag: "LAYOUT",
     pattern: "margins · squares",
-    body: "Outer margin 0.45\", inner gutter 0.35\". Use rectangular shapes — circles are off-brand for data viz.",
+    body: "Outer margin 0.45\", inner gutter 0.35\". Use rectangular shapes, circles are off-brand for data viz.",
   },
   {
     key: "slideMode",
-    label: "Slide mode — Presentation 12-14pt vs Detail 10-11pt",
+    label: "Slide mode, Presentation 12-14pt vs Detail 10-11pt",
     short: "slide mode",
     tag: "SLIDE_MODE",
     pattern: "presentation | detail",
-    body: "Presentation mode: titles 24-32pt, body 12-14pt. Detail mode: body 10-11pt. Pick one — don't mix.",
+    body: "Presentation mode: titles 24-32pt, body 12-14pt. Detail mode: body 10-11pt. Pick one, don't mix.",
   },
   {
     key: "humanEditable",
-    label: "Human-editable — 1 info unit = 1 shape",
+    label: "Human-editable, 1 info unit = 1 shape",
     short: "human-editable",
     tag: "HUMAN_EDITABLE",
     pattern: "1 idea → 1 shape",
-    body: "Every information unit is its own shape — bullet, number, label. Never bake text into images. The deck must be editable in PowerPoint.",
+    body: "Every information unit is its own shape, bullet, number, label. Never bake text into images. The deck must be editable in PowerPoint.",
   },
 ];
 
@@ -886,7 +892,7 @@ const TOOLS = [
   { key: "drawio_diagram",     label: "drawio.architecture",   sub: "architecture diagram" },
 ];
 
-// Evals run AFTER the slide is built — accenture-pptx-qa critic checks brand fit.
+// Evals run AFTER the slide is built, accenture-pptx-qa critic checks brand fit.
 const EVALS = [
   { key: "brandColorCheck", label: "Brand colors within tolerance",  short: "brand colors",   tag: "A100FF dominant?" },
   { key: "typographyCheck", label: "Typography on-brand & readable", short: "typography",     tag: "Graphik + ≥10pt?" },
@@ -956,7 +962,7 @@ function draw() {
   // ── Thinking visualizations (above stations) ──
   drawRecipeCard();
   drawToolbox();
-  // (DB monitor on canvas is decorative only — actual SQL/results stream
+  // (DB monitor on canvas is decorative only, actual SQL/results stream
   //  in the HTML db-terminal panel below the stage where they're readable.)
 
   // agent sprite
@@ -1089,7 +1095,7 @@ function drawDbMonitor() {
 
   // screen recess
   ctx.fillStyle = "#1a1814"; ctx.fillRect(bx + 2, by + 2, mw - 4, mh - 6);
-  // screen — bright cyan when terminal is live, otherwise dim
+  // screen, bright cyan when terminal is live, otherwise dim
   const term = document.getElementById("db-terminal");
   const live = !!term && !term.classList.contains("hidden") && !term.classList.contains("idle");
   ctx.fillStyle = live ? "#0e2838" : "#0e1822";
@@ -1163,7 +1169,7 @@ function drawWhiteboard() {
   ctx.textAlign = "start";
 }
 
-/* The teacher (evals.json). Procedural sprite, no spritesheet — drawn
+/* The teacher (evals.json). Procedural sprite, no spritesheet, drawn
  * directly so we can avoid shipping another asset. She wears a navy
  * blazer and carries a clipboard with the "expected" answer. Walks in
  * from off-screen right when evalsOn fires after the agent ships data. */
@@ -1200,7 +1206,7 @@ function drawTeacher() {
   ctx.fillRect(bx + 3, by + h - 2, 5, 2);
   ctx.fillRect(bx + 10, by + h - 2, 5, 2);
 
-  // blazer body — navy
+  // blazer body, navy
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx + 2, by + 14, w - 4, 11);
   // lapel V (lighter)
@@ -1210,7 +1216,7 @@ function drawTeacher() {
   ctx.fillStyle = "#d4452f";
   ctx.fillRect(bx + 8, by + 16, 2, 8);
 
-  // arms — same blazer color
+  // arms, same blazer color
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx,        by + 15, 3, 8);
   ctx.fillRect(bx + w - 3, by + 15, 3, 8);
@@ -1245,7 +1251,7 @@ function drawTeacher() {
   ctx.fillStyle = "#e8b894";
   ctx.fillRect(bx + 7, by + 11, 4, 3);
 
-  // head — skin tone
+  // head, skin tone
   ctx.fillStyle = "#e8b894";
   ctx.fillRect(bx + 4, by + 2, 10, 10);
   // hair (brown bob, distinct from Julia's blonde)
@@ -1307,8 +1313,8 @@ function drawTeacher() {
 }
 
 // Report card: floats above the whiteboard while the teacher grades.
-// Two columns — actual (left, agent's number) vs expected (right, the
-// truth from the test fixture) — with row-level pass/fail markers.
+// Two columns, actual (left, agent's number) vs expected (right, the
+// truth from the test fixture), with row-level pass/fail markers.
 function drawReportCard() {
   if (!state.reportCard) return;
   const card = state.reportCard;
@@ -1332,7 +1338,7 @@ function drawReportCard() {
   ctx.lineWidth = 1;
   ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
 
-  // header band — navy, like the teacher's blazer
+  // header band, navy, like the teacher's blazer
   ctx.fillStyle = "#2a3858";
   ctx.fillRect(bx, by, w, headH);
   ctx.fillStyle = "#fdfaf5";
@@ -1350,7 +1356,7 @@ function drawReportCard() {
 
   // Truncate a string to fit a given pixel width at the current font.
   const fit = (text, maxPx) => {
-    if (!text) return "—";
+    if (!text) return "-";
     if (ctx.measureText(text).width <= maxPx) return text;
     let s = text;
     while (s.length > 1 && ctx.measureText(s + "…").width > maxPx) s = s.slice(0, -1);
@@ -1376,7 +1382,7 @@ function drawReportCard() {
     let mark = "·", mcol = "#bba";
     if (ln.status === "pass") { mark = "✓"; mcol = "#3a7a3a"; }
     else if (ln.status === "fail") { mark = "✗"; mcol = "#d4452f"; }
-    else if (ln.status === "skip") { mark = "–"; mcol = "#bba"; }
+    else if (ln.status === "skip") { mark = "-"; mcol = "#bba"; }
     ctx.fillStyle = mcol;
     ctx.font = "bold 11px ui-monospace, monospace";
     ctx.fillText(mark, bx + w - 14, ly + 5);
@@ -1453,7 +1459,7 @@ function drawRecipeCard() {
     let mark = "", col = "#1a1814";
     if      (ln.status === "pass") { mark = "✓"; col = "#3a7a3a"; }
     else if (ln.status === "fail") { mark = "✗"; col = "#d4452f"; }
-    else if (ln.status === "skip") { mark = "–"; col = "#bba"; }
+    else if (ln.status === "skip") { mark = "-"; col = "#bba"; }
     ctx.fillStyle = col;
     ctx.font = "bold 9px ui-monospace, monospace";
     ctx.fillText(mark, cx + 1, cy + 8);
@@ -1472,7 +1478,7 @@ function drawToolbox() {
     { key: "canva_stock_photo",  short: "stock_photo"  },
     { key: "drawio_diagram",     short: "drawio.arch"  },
   ];
-  // vertical column of 3 chips above the chest — clearer + no horizontal overlap
+  // vertical column of 3 chips above the chest, clearer + no horizontal overlap
   // chest sits LEFT of agent → chest center ≈ s.x - 21
   const chipW = 78, chipH = 14, gap = 2;
   const totalH = chipH * 3 + gap * 2;
@@ -1504,7 +1510,7 @@ function drawToolbox() {
 
 function drawAgent() {
   const a = state.agent;
-  // Always pick a directional sprite by facing — never the bundled-with-desk
+  // Always pick a directional sprite by facing, never the bundled-with-desk
   // juliaPC spritesheet (it draws the agent welded into a workstation, which
   // looks like a "spinning computer" at our small office stations).
   let sheet;
@@ -1529,14 +1535,14 @@ function drawAgent() {
   // Sheet layouts differ:
   //   Julia-Idle.png            128×32   →  4 frames of 32×32 in one row
   //   Julia_walk_<dir>.png      256×64   →  4 frames of 64×64 in one row
-  // Sample each sheet at its actual frame size — sampling 32×40 from the
+  // Sample each sheet at its actual frame size, sampling 32×40 from the
   // walk sheets used to splice half-of-frame-0 with the top of row-2,
   // chopping the sprite at the torso during the walk cycle.
   const cols = 4;
   const frameW = Math.floor(sheet.width / cols);
   const frameH = sheet.height;
   const sx = a.frame * frameW;
-  // Walk-sheet content sits roughly y=15..47 of a 64-px cell — anchor at
+  // Walk-sheet content sits roughly y=15..47 of a 64-px cell, anchor at
   // the visual feet (~ 0.74 × frameH) rather than the cell bottom so
   // the agent doesn't appear to float over the floor labels.
   const footAnchor = frameH > 32 ? Math.round(frameH * 0.74) : frameH;
@@ -1635,7 +1641,7 @@ function loop(t) {
   const dt = t - lastT;
   lastT = t;
 
-  // animate frames — walking is brisk, reading/tooling/drawing are slow.
+  // animate frames, walking is brisk, reading/tooling/drawing are slow.
   // Pure idle (standing still, no activity) freezes on frame 0 so the
   // agent stops looking like she's nervously bouncing in place.
   const a = state.agent;
@@ -1674,7 +1680,7 @@ function loop(t) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * STEP PRIMITIVES — building blocks for scenarios
+ * STEP PRIMITIVES, building blocks for scenarios
  * each returns a Promise that resolves when the step completes
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -1730,7 +1736,7 @@ function teacherSay(text, ms = 2600) {
   return wait(ms);
 }
 
-// Thought bubble — agent's internal reasoning. Cloud-shaped, blue text.
+// Thought bubble, agent's internal reasoning. Cloud-shaped, blue text.
 function think(text, ms = 3000) {
   state.bubble = { text, x: state.agent.x, y: state.agent.y, ttl: ms * TIME_SCALE, kind: "thought" };
   return wait(ms);
@@ -1742,7 +1748,7 @@ function activity(name, ms) {
   return wait(ms).then(() => { state.agent.activity = "idle"; });
 }
 
-// Skill panel primitives — drive the HTML panel under the stage
+// Skill panel primitives, drive the HTML panel under the stage
 function clearRules() {
   state.ruleStatus = {};
   renderSkillPanel();
@@ -1760,11 +1766,11 @@ function setEval(key, status) {
 /* Teacher (evals.json) primitives.
  * She lives off-screen at the right edge until walkInTeacher pulls her
  * over to the dashboard. The clipboard appears in her hands once she
- * arrives — that's the "expected.json" reference she compares against. */
+ * arrives, that's the "expected.json" reference she compares against. */
 
 // Teacher stands at the top-left of the room, in clear floor space
 // above the agent's walking lane. She's a separate, visibly distinct
-// character — not blocking the dashboard, the whiteboard report card,
+// character, not blocking the dashboard, the whiteboard report card,
 // the agent's stations, or the agent's path along the bottom lane.
 const TEACHER_GRADE_X = 86;
 const TEACHER_Y = 158;
@@ -1780,7 +1786,7 @@ function spawnTeacher() {
     verdict: null,
   };
 }
-// Teacher is now permanent — kept for symmetry with spawnTeacher but
+// Teacher is now permanent, kept for symmetry with spawnTeacher but
 // no longer called from grading. Only resetAll() should call this.
 function despawnTeacher() {
   state.teacher = null;
@@ -1857,7 +1863,7 @@ async function runTeacherGrading(rows, opts = {}) {
 }
 
 
-// MCP panel primitives — drive the HTML panel + chest sprite on canvas
+// MCP panel primitives, drive the HTML panel + chest sprite on canvas
 function openMcp(tool = null) {
   state.mcpOpen = true;
   state.mcpTool = tool;
@@ -1877,7 +1883,7 @@ function closeMcp() {
   renderMcpPanel();
 }
 
-// Recipe-card primitives — drive the SKILL station "thinking" overlay
+// Recipe-card primitives, drive the SKILL station "thinking" overlay
 function openRecipe() {
   state.recipeCard = {
     lines: RULES.map(r => ({
@@ -1893,7 +1899,7 @@ function setRecipeLine(key, status) {
 }
 function closeRecipe() { state.recipeCard = null; }
 
-// Slide stage primitives — drive the live HTML/CSS PPTX preview.
+// Slide stage primitives, drive the live HTML/CSS PPTX preview.
 // The slide is a 16:9 div with stacked .layer children. We reveal layers
 // one at a time during BUILD, and overlay QA red circles or a green PASS.
 const SLIDE_LAYERS = ["bg", "gt", "logo", "title", "chart", "callout"];
@@ -1980,12 +1986,12 @@ function clearChart() {
   state.chartShown = false;
 }
 
-// Full HTML dashboard — the "this is what you can build" payoff.
+// Full HTML dashboard, the "this is what you can build" payoff.
 // Renders real numbers below the stage when a clean run finishes.
 // Scenario A = top-10 countries by attack count.
 // Scenario C = JOIN preview (country code → resolved name + attack count).
 //   When the JOIN runs against COUNTRY_DIRTYDATA, the same code resolves
-//   to two names — that's the "leak" learners can spot in the preview.
+//   to two names, that's the "leak" learners can spot in the preview.
 const TOP10 = [
   { country: "Iraq",        n: 15400 },
   { country: "Afghanistan", n: 12970 },
@@ -2100,7 +2106,7 @@ function renderSkillPanel() {
       icon = "·";
     } else if (status === "pass")  { cls += " fired-pass"; icon = "✓"; }
     else if (status === "fail")    { cls += " fired-fail"; icon = "✗"; }
-    else if (status === "skip")    { cls += " skipped";    icon = "–"; }
+    else if (status === "skip")    { cls += " skipped";    icon = "-"; }
     return `<div class="${cls}">
       <div class="icon">${icon}</div>
       <div class="label">${escHtml(r.label)}<small>${escHtml(r.pattern)}</small></div>
@@ -2143,7 +2149,7 @@ function renderEvalsPanel() {
       cls += " disabled";
     } else if (status === "pass") { cls += " fired-pass"; icon = "✓"; }
     else if (status === "fail")   { cls += " fired-fail"; icon = "✗"; }
-    else if (status === "skip")   { cls += " skipped";    icon = "–"; }
+    else if (status === "skip")   { cls += " skipped";    icon = "-"; }
     return `<div class="${cls}">
       <div class="icon">${icon}</div>
       <div class="label">${escHtml(e.label)}<small>${escHtml(e.tag)}</small></div>
@@ -2156,7 +2162,7 @@ function escHtml(s) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * SCENARIOS — narrative coherent with stack-trace demo
+ * SCENARIOS, narrative coherent with stack-trace demo
  * ═══════════════════════════════════════════════════════════════════ */
 
 /* Pre-mark all four rules as "pending" for this run so the panel shows
@@ -2173,7 +2179,7 @@ function beginRun() {
   state.recipeCard = null;
   state.toolbox = null;
   state.dbScreen = null;
-  // Teacher is permanent — clear the report card + verdict but keep her in the room.
+  // Teacher is permanent, clear the report card + verdict but keep her in the room.
   spawnTeacher();
   hideFullDashboard();
   hideDbTerminal();
@@ -2208,12 +2214,12 @@ async function walkSkillStation(predicates) {
     if (verdict === "block") {
       setCheck(r.key, "fail");
       setRecipeLine(r.key, "fail");
-      logLine("fail", `rule "${r.short}" — blocks the slide`);
+      logLine("fail", `rule "${r.short}", blocks the slide`);
       blockedBy = blockedBy || r;
     } else if (verdict === "rewrite") {
       setCheck(r.key, "pass");
       setRecipeLine(r.key, "pass");
-      logLine("ok", `rule "${r.short}" — rewrote the slide`);
+      logLine("ok", `rule "${r.short}", rewrote the slide`);
     } else {
       setCheck(r.key, "pass");
       setRecipeLine(r.key, "pass");
@@ -2241,33 +2247,33 @@ async function runScenarioA() {
   await think("partner needs one slide.\nbrand-compliant.\nheadline number + chart.", 2200);
 
   if (state.skillOn) {
-    await think("first the checklist —\nwhat does accenture-pptx\nrequire?", 1600);
+    await think("first the checklist,\nwhat does accenture-pptx\nrequire?", 1600);
     await walkSkillStation({});
     await think("all 5 rule groups loaded.\non to assets.", 1500);
   } else {
-    logLine("warn", "SKILL off — no brand pre-flight");
-    await think("skill is OFF —\nskipping brand checks", 1400);
+    logLine("warn", "SKILL off, no brand pre-flight");
+    await think("skill is OFF,\nskipping brand checks", 1400);
   }
 
   if (!state.mcpOn) {
     await gotoStation("mcp");
-    await say("MCP off — no assets", 1500);
-    logLine("fail", "MCP off — Canva/draw.io unreachable, [MISSING ASSET] placeholders");
+    await say("MCP off, no assets", 1500);
+    logLine("fail", "MCP off, Canva/draw.io unreachable, [MISSING ASSET] placeholders");
   } else {
     await gotoStation("mcp");
     openMcp();
     await think("MCP exposes 3 tools.\nwhich do I need?", 1800);
     await useTool("canva_brand_assets");
-    await think("1) canva.brand_assets —\nofficial logo + palette", 1500);
+    await think("1) canva.brand_assets,\nofficial logo + palette", 1500);
     await useTool("canva_stock_photo");
-    await think("2) canva.stock_photo —\nhero photo for cover", 1500);
+    await think("2) canva.stock_photo,\nhero photo for cover", 1500);
     await useTool("drawio_diagram");
-    await think("3) drawio.architecture —\ncloud-native stack diagram", 1400);
+    await think("3) drawio.architecture,\ncloud-native stack diagram", 1400);
     logLine("info", "MCP: 3 assets fetched");
     closeMcp();
   }
 
-  // BUILD — assemble the slide layer by layer.
+  // BUILD, assemble the slide layer by layer.
   await gotoStation("db");
   state.agent.facing = "left";
   state.agent.activity = "tooling";
@@ -2276,13 +2282,13 @@ async function runScenarioA() {
   await addSlideLayer("bg", 380);    logLine("info", "layer 1 · background + GT bar");
   await addSlideLayer("gt", 320);    logLine("info", "layer 2 · GT brand mark");
   await addSlideLayer("logo", 360);  logLine("info", state.mcpOn ? "layer 3 · accenture logo (canva)" : "layer 3 · [MISSING] logo placeholder");
-  await addSlideLayer("title", 380); logLine("info", "layer 4 · title — Cloud strategy 2026");
+  await addSlideLayer("title", 380); logLine("info", "layer 4 · title, Cloud strategy 2026");
   await addSlideLayer("chart", 420); logLine("info", "layer 5 · chart bars");
-  await addSlideLayer("callout", 380); logLine("info", "layer 6 · callout — 3.2× faster TTM");
+  await addSlideLayer("callout", 380); logLine("info", "layer 6 · callout, 3.2× faster TTM");
   await wait(700);
   state.agent.activity = "idle";
 
-  // QA — critic walks in, evaluates the slide.
+  // QA, critic walks in, evaluates the slide.
   await gotoStation("board");
   let qaTone = "ok";
   if (!state.skillOn) qaTone = "fail";
@@ -2297,7 +2303,7 @@ async function runScenarioA() {
         { key: "layoutCheck",     label: "layout",       actual: "0.45\" · squares", expected: "0.45\" · squares", verdict: "pass" },
       ], { headline: "ship it. ✓", finalVerdict: "pass" });
       passQa();
-      logLine("ok", "QA passed — slide is brand-compliant, ship to client");
+      logLine("ok", "QA passed, slide is brand-compliant, ship to client");
     } else if (qaTone === "warn") {
       flagQa({ x: 4, y: 6, w: 22, h: 12 }, "MISSING logo");
       flagQa({ x: 6, y: 50, w: 48, h: 30 }, "placeholder bars");
@@ -2305,8 +2311,8 @@ async function runScenarioA() {
         { key: "brandColorCheck", label: "brand colors", actual: "A100FF",        expected: "A100FF",        verdict: "pass" },
         { key: "typographyCheck", label: "typography",   actual: "Graphik 12pt",  expected: "Graphik ≥10pt", verdict: "pass" },
         { key: "layoutCheck",     label: "layout",       actual: "missing assets",expected: "all assets",    verdict: "warn" },
-      ], { headline: "missing assets —\nrebuild with MCP.", finalVerdict: "warn" });
-      logLine("warn", "QA warn — logo/photo placeholders, asks to retry with MCP on");
+      ], { headline: "missing assets,\nrebuild with MCP.", finalVerdict: "warn" });
+      logLine("warn", "QA warn, logo/photo placeholders, asks to retry with MCP on");
     } else {
       flagQa({ x: 4, y: 14, w: 60, h: 12 }, "Comic Sans · off-brand");
       flagQa({ x: 4, y: 6, w: 22, h: 8 }, "blue 1f6fd6 · wrong");
@@ -2317,13 +2323,13 @@ async function runScenarioA() {
         { key: "typographyCheck", label: "typography",   actual: "Comic Sans",    expected: "Graphik",     verdict: "fail" },
         { key: "layoutCheck",     label: "layout",       actual: "ALL CAPS title",expected: "sentence case",verdict: "fail" },
       ], { headline: "off-brand. don't ship.", finalVerdict: "fail" });
-      logLine("fail", "QA fail — wrong color, wrong font, ALL CAPS title");
+      logLine("fail", "QA fail, wrong color, wrong font, ALL CAPS title");
     }
   } else {
     if (qaTone !== "ok") {
-      logLine("fail", "evals OFF — broken slide shipped to client (✉ angry email)");
+      logLine("fail", "evals OFF, broken slide shipped to client (angry email)");
     } else {
-      logLine("warn", "evals OFF — nobody verified the brand fit");
+      logLine("warn", "evals OFF, nobody verified the brand fit");
     }
   }
 
@@ -2386,12 +2392,12 @@ function generateSkillMarkdown() {
   lines.push("# Accenture PPTX");
   lines.push("");
   if (active.length === 0) {
-    lines.push("# (no rules — agent will assemble whatever, expect off-brand output)");
+    lines.push("# (no rules, agent will assemble whatever, expect off-brand output)");
   } else {
     lines.push("Before assembling any slide:");
     lines.push("");
     for (const r of active) {
-      lines.push(`- **${r.tag}** — ${r.body}`);
+      lines.push(`- **${r.tag}**, ${r.body}`);
     }
   }
   lines.push("");
@@ -2413,7 +2419,7 @@ function renderSkillBuilderPreview() {
   if (cnt) {
     const n = RULES.filter(r => state.rules[r.key]).length;
     cnt.textContent = (n === 0)
-      ? "0 rules active (agent will improvise — expect off-brand output)"
+      ? "0 rules active (agent will improvise, expect off-brand output)"
       : (n === 1 ? "1 rule active" : n + " rules active");
   }
 }
@@ -2436,7 +2442,7 @@ function highlightSkillMd(md) {
   }).join("\n");
 }
 
-/* CRC-32 (IEEE 802.3 polynomial) — used by ZIP per-file checksums. */
+/* CRC-32 (IEEE 802.3 polynomial), used by ZIP per-file checksums. */
 const CRC32_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -2453,7 +2459,7 @@ function crc32(bytes) {
 }
 
 /* Minimal store-only ZIP writer. Files: [{name, data: Uint8Array}].
- * Store-only (compression method 0) keeps the implementation under 60 lines —
+ * Store-only (compression method 0) keeps the implementation under 60 lines,
  * for a few KB of markdown the size penalty is negligible.
  */
 function buildZip(files) {
@@ -2531,7 +2537,7 @@ function downloadSkillMd() {
     "",
     "## Install (Claude Code, GitHub Copilot in VS Code)",
     "",
-    "Drop the `accenture-pptx/` folder into one of these locations —",
+    "Drop the `accenture-pptx/` folder into one of these locations,",
     "both Copilot and Claude Code read them:",
     "",
     "- **Global** (any project): `~/.claude/skills/accenture-pptx/`",
@@ -2545,8 +2551,8 @@ function downloadSkillMd() {
     "",
     "## What's inside",
     "",
-    "`accenture-pptx/SKILL.md` — five rule groups you ticked in the Pixel Consultant demo.",
-    "Each group is one bullet — edit, remove, or add your own.",
+    "`accenture-pptx/SKILL.md`, five rule groups you ticked in the Pixel Consultant demo.",
+    "Each group is one bullet, edit, remove, or add your own.",
     "",
     "Generated from https://ishalkin.github.io/pixel-consultant-agent/",
   ].join("\n");
