@@ -385,6 +385,26 @@ skill-builder). Borrow a direction if it fits; invent one if it does not.
 If the concept comes with brand constraints (a client colour, a workshop's
 house style), honor those over any reference look.
 
+**Draw the field, do not just label it.** If the concept IS a gradient, a flow, a
+pressure, a force, a field, anything continuous that varies across space, then that
+quantity is the hero of the page and it must be VISIBLE as a thing on the canvas, a
+wash / heatmap / arrow whose length tracks magnitude / particle density, not merely
+a text label ("BMP source") pointing at empty space. The recurring failure (caught
+on the neural-tube demo) was a page whose entire point was "two opposing gradients
+overlap across the same cells" while neither gradient was actually rendered, only
+named. The fix that made it land: paint each gradient as a vertical wash behind the
+actors, and tie its opacity to the live source state so toggling a source off or
+dialing a slider visibly drains its field. When the field is the concept, make the
+field something the eye can see change.
+
+**Fill the frame, do not leave the hero in a corner.** A canvas that is mostly empty
+paper with the subject crammed into one quadrant reads as unfinished, not as
+minimal. Either center and size the subject to use the space, or put the empty
+region to work with something that also teaches (the gradient wash above, a
+persistent axis with live magnitude arrows, a legend, a small inset). Empty space is
+fine only when it is deliberate breathing room around a centered subject, not a
+gap the eye reads as "missing".
+
 ## Localization
 
 The page's language is independent of the chat language. Ask which language the
@@ -455,6 +475,14 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
    the setting fit (large type and an autoplay-with-pause story for a live
    presenter, calmer self-paced controls for a solo reader)? If you never asked who
    it is for, that is a process miss, not a style nitpick.
+7. Look at a rendered screenshot, not just the code. If the concept is a
+   gradient / flow / field, confirm that quantity is actually DRAWN (a wash, arrows,
+   density) and not just labeled, and that it visibly changes when its source is
+   toggled or dialed. Confirm the frame is filled: the subject is centered or the
+   empty region does real work, not the hero stranded in a corner. Confirm no two
+   on-canvas labels overlap and that symmetric elements are labeled symmetrically (a
+   thing on the left and an identical thing on the right should not have one named
+   and the other bare).
 
 ## What this skill is NOT
 
