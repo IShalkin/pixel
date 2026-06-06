@@ -1,0 +1,63 @@
+LPC asset credits
+=================
+
+These sprites come from the Liberated Pixel Cup (LPC) collection, bundled here
+under the LPC licenses. LPC art is NOT public domain / NOT CC0. Every sheet is
+licensed under a combination of OGA-BY 3.0, CC-BY-SA 3.0, and GPL 3.0, and
+REQUIRES attribution plus share-alike for derivatives. This file is that
+required attribution. If you redistribute or modify these assets, you must keep
+this file (or an equivalent), credit the authors, and license your derivative
+under compatible terms.
+
+Generator / source of record:
+  Universal LPC Spritesheet Character Generator
+  https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator
+  Overview of the bases: https://opengameart.org/content/lpc-character-bases
+
+
+body/male_walk.png, body/male_idle.png
+body/female_walk.png, body/female_idle.png
+---------------------------------------------------------------------
+Layer: "Body Color" (LPC character bases)
+Licenses: OGA-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
+Authors:
+  bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert,
+  Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani,
+  Pierre Vigier (pvigier), Matthew Krohn (makrohn),
+  Johannes Sjolund (wulax), Stephen Challener (Redshrike)
+Source URLs:
+  https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+  https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+  https://opengameart.org/content/lpc-ladies
+  https://opengameart.org/content/lpc-7-womens-shirts
+  https://opengameart.org/content/lpc-jump-expanded
+  https://opengameart.org/content/lpc-be-seated
+  https://opengameart.org/content/lpc-revised-character-basics
+  https://opengameart.org/content/lpc-male-jumping-animation-by-durrani
+  https://opengameart.org/content/lpc-runcycle-and-diagonal-walkcycle
+  https://opengameart.org/content/lpc-character-bases
+  https://gitlab.com/vagabondgame/lpc-characters
+
+
+hair/plain_walk.png, hair/plain_idle.png
+---------------------------------------------------------------------
+Layer: "Plain" hair (hair/plain/adult)
+Licenses: OGA-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0
+Authors:
+  JaidynReiman, Manuel Riecke (MrBeast), Joe White
+Source URLs:
+  https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+  https://opengameart.org/content/ponytail-and-plain-hairstyles
+  https://opengameart.org/content/lpc-expanded-hair
+
+
+License texts
+-------------
+  CC-BY-SA 3.0 : https://creativecommons.org/licenses/by-sa/3.0/
+  GPL 3.0      : https://www.gnu.org/licenses/gpl-3.0.html
+  OGA-BY 3.0   : https://static.opengameart.org/OGA-BY-3.0.txt
+
+Sprite format: each PNG is a 64x64-per-frame LPC sheet. Walk sheets are laid out
+as the standard LPC walk rows (up, left, down, right), 9 frames per row. Body
+and hair layers share the same grid, so a hair sheet overlays its matching body
+sheet frame-for-frame.
