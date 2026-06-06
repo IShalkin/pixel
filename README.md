@@ -72,6 +72,14 @@ The full method lives in [`SKILL.md`](SKILL.md). In short, it walks you through:
 - **Find the situation and name the "aha"** before any code.
 - **Build the self-playing story as the primary feature,** then add a sandbox of
   controls the audience can manipulate. Not a movie, not a bare slideshow.
+- **Draw the field, do not just label it.** When the concept is a gradient, a
+  flow, or a field, render that quantity as something the eye can see change, not
+  a text label pointing at empty space.
+- **Know when this is the wrong tool.** A hand-drawn stepped scene is for showing a
+  mechanism. For precise quantitative charts, dense graphs and networks, true 3D,
+  or thousands of particles, the skill tells you to reach for the right tool (a
+  charting library, a layout engine) or reframe the concept, rather than ship a
+  fragile hand-rolled version.
 - **Borrowable techniques** to lift only when your page needs them: crisp canvas
   setup, pause-aware abortable timing, manual canvas text wrapping and clipping,
   a one-rig walk/dance figure, emotes, parallax, goal-driven NPC steering, a DOM
