@@ -212,7 +212,54 @@ actually uses them):
   `imageSmoothingEnabled=false`, logical-coordinate shadow size.
 - Pause-aware, abortable timing (`ABORTED` sentinel, `tween`/`wait` that account
   for elapsed time) so Pause freezes instead of fast-forwarding. Use this instead
-  of raw `setTimeout` whenever a canvas demo can be paused.
+  of raw `setTimeout` whenever a canvas demo can be paused. This is the technique
+  the skill insists on most (the no-`setTimeout` rule below depends on it), so the
+  actual implementation is inline here rather than left as prose. It needs three
+  bits of state: `state.paused` (Pause freezes progress), `state.speed` (a global
+  rate so one slider scales every beat), and `state.abort` (a token bumped on Reset
+  so any in-flight beat rejects with `ABORTED` instead of finishing on a stale
+  scene). Drive everything off a single `requestAnimationFrame` render loop that
+  reads `state` each frame; `tween`/`wait` only schedule against it.
+```js
+const ABORTED = Symbol("aborted");   // thrown when Reset interrupts a running beat
+// pause-aware, abortable tween: elapsed-time accounting, so pausing freezes
+// progress instead of fast-forwarding on resume. easeInOut built in.
+function tween(setter, from, to, ms) {
+  const token = state.abort;
+  return new Promise((res, rej) => {
+    const dur = ms / state.speed; let elapsed = 0, prev = performance.now();
+    const step = () => {
+      if (state.abort !== token) return rej(ABORTED);   // Reset bumped the token
+      const now = performance.now();
+      if (!state.paused) elapsed += now - prev;          // frozen while paused
+      prev = now;
+      const p = Math.min(1, elapsed / dur);
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;   // easeInOutQuad
+      setter(from + (to - from) * e);
+      if (p >= 1) res(); else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+function wait(ms) {                   // same accounting, no value to set
+  const token = state.abort;
+  return new Promise((res, rej) => {
+    const dur = ms / state.speed; let elapsed = 0, prev = performance.now();
+    const step = () => {
+      if (state.abort !== token) return rej(ABORTED);
+      const now = performance.now();
+      if (!state.paused) elapsed += now - prev;
+      prev = now;
+      if (elapsed >= dur) res(); else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+// Play runs the beat chain and swallows ABORTED so Reset just stops it:
+//   async function playAll(){ try { for (const b of beats) await b(); }
+//                             catch(e){ if(e!==ABORTED) throw e; } }
+// Pause: state.paused = !state.paused;   Reset: state.abort++; state.paused = false;
+```
 - One-speech-bubble-at-a-time discipline; a "camera" that focuses the actor.
 - Sprite walking between fixed stations; a procedurally drawn second actor.
 - DOM verdict engine: a pure `run`/`evaluate` returning typed statuses with
