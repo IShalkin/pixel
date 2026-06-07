@@ -220,9 +220,9 @@ actually uses them):
   CSS keyframes/transitions for flow; an inline `?test=1` assertion harness.
 - A dependency-free store-only ZIP writer (CRC-32) for multi-file downloads.
 - Manual canvas text handling (wrap from `measureText`, clip per panel, bubble
-  placement). See "Text rendering on canvas" below.
+  placement). See [`reference/technique-canvas-text.md`](reference/technique-canvas-text.md).
 - Aliveness moves (walk cycle, idle bob, emotes, parallax, animated tiles, NPC
-  steering) and a vetted asset/license catalog. See "Making the scene feel alive".
+  steering) and a vetted asset/license catalog. See [`reference/technique-aliveness.md`](reference/technique-aliveness.md).
 
 **Always invented per concept** (never inherited from an example):
 - The situation and the "aha".
@@ -232,196 +232,28 @@ actually uses them):
 - Which of the borrowable techniques you use at all.
 - Whether there is a sabotage toggle, a second actor, a builder, an export.
 
-## Text rendering on canvas (no block model, so wrapping and clipping are manual)
+## Borrowable-technique deep-dives (read on demand, not every time)
 
-Canvas 2D has no layout engine: `fillText` does not wrap, does not clip, and does
-not measure the box for you. The three text bugs this family keeps hitting
-(overflow past a bubble, two bubbles overlapping, animated content escaping a
-panel) all come from treating canvas like the DOM. Apply these. The first and
-third are confirmed against engine docs; the second is sound engineering with no
-primary source, so treat it as a default, not gospel.
+Two techniques have enough hard-won detail that they live in their own files under
+[`reference/`](reference/), so this method file stays short. Open the matching file
+ONLY when your chosen medium actually uses it; otherwise skip both.
 
-**Overflow: build the box FROM the text, never cram text into a fixed box.**
-Wrap by measuring candidate lines with `ctx.measureText(s).width`, breaking before
-a line exceeds the box width. Compute height from the vertical metrics, not a
-guess: `lineH = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent` (Baseline since
-Aug 2023). `fillText`'s `maxWidth` only squashes glyphs, it does not wrap, so do
-not rely on it. Confirmed: MDN measureText and Phaser's word-wrap source.
-```js
-function wrapText(ctx, text, maxW) {        // greedy word wrap, returns lines[]
-  const words = text.split(' '); let line = ''; const lines = [];
-  for (const w of words) {
-    const t = line ? line + ' ' + w : w;
-    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
-    else line = t;
-  }
-  if (line) lines.push(line);
-  return lines;                              // box height = lines.length*lineH + 2*pad
-}
-```
-(`https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/measureText`)
+- **Text rendering on canvas** -> [`reference/technique-canvas-text.md`](reference/technique-canvas-text.md).
+  Read it when an animated canvas draws text (speech bubbles, labels, panels of
+  moving content). Canvas 2D has no layout engine, so wrapping, clipping, and
+  de-overlapping boxes are all manual. Headline gotchas: build the box FROM the
+  text with `measureText` (never cram text into a fixed box); `save/clip/draw/restore`
+  every panel of moving content; show one bubble at a time or place with the AABB
+  flip-plus-queue solver. Plain-DOM pages need none of this.
+- **Making the scene feel alive (assets and motion)** -> [`reference/technique-aliveness.md`](reference/technique-aliveness.md).
+  Read it when the page has characters or a scene that should feel animated (an
+  actor doing a loop, a crowd, a living background). Covers the licensed asset
+  catalog (record every license; LPC needs a `CREDITS.txt`), the one-rig
+  walk/dance/idle figure, emotes, parallax, autotiling, and goal-driven NPC
+  steering. A DOM verdict page or a static diagram needs none of this.
 
-**Containment: clip every panel that holds moving or possibly-overflowing content.**
-A clip cannot be reverted directly, so the idiom is always save, clip, draw,
-restore. This is the fix for scrolling fake-text on a dashboard, floating
-harvest/damage numbers, any animated content that must stay inside its frame.
-Confirmed: MDN clip. The DOM equivalent is `overflow:hidden` on a positioned
-ancestor (confirmed: MDN overflow).
-```js
-ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
-drawScrollingStuff();            // nothing escapes the rect
-ctx.restore();
-```
-(`https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/clip`)
-
-**Two boxes overlapping: serialize, or place with a simple solver.** The cheapest
-fix and the one this family already half-uses: show one bubble at a time and queue
-the rest (a second actor's line waits its turn). When two must be visible, place
-each above its owner, clamp into frame, and if it would collide with an
-already-placed box, flip it below or push it down by the other box's height (AABB
-test). Note: no primary source confirmed a dedicated speech-bubble placement
-algorithm; the general label-de-overlap solvers that exist (D3-Labeler simulated
-annealing, d3-force `forceCollide`) are overkill for a few runtime bubbles and
-`forceCollide` does not even guarantee separation, so the AABB-flip-plus-queue
-approach below is deliberate, not borrowed.
-```js
-function placeBubble(ax, ay, bw, bh, taken) {  // ax,ay = owner head; taken = placed boxes
-  let x = ax - bw/2, y = ay - bh - 8;          // default above the head
-  x = Math.max(4, Math.min(x, logicalW - bw - 4));
-  if (y < 4) y = ay + 8;                        // no room above -> below
-  for (const r of taken)                        // overlaps a placed box -> push down
-    if (x < r.x+r.w && x+bw > r.x && y < r.y+r.h && y+bh > r.y) y = r.y + r.h + 6;
-  taken.push({x, y, w: bw, h: bh});
-  return {x, y};
-}
-```
-
-Add to verification: run the LONGEST lines through every bubble and panel and
-confirm nothing overflows and no two boxes overlap.
-
-## Making the scene feel alive (assets and motion)
-
-The default failure is a static scene: a character that slides without animating,
-flat affect, a dead background. Aliveness is cheap if you reach for the right
-move. All of the below is optional and per-concept, like every other borrowable
-technique. Use `assets/` for real sprite art (the references already fail-soft on
-missing PNGs); draw procedurally when you have no art.
-
-**Asset catalog (record the license every time, it is the high-stakes part).**
-
-| Source | License | Contents | Note |
-|---|---|---|---|
-| Liberated Pixel Cup (LPC) base + [Universal-LPC generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator) | **CC-BY-SA 3.0 / GPL 3.0, NOT CC0** (confirmed) | layered bodies, walk/run/jump cycles, clothing, hair, expressions, NPCs, tilesets, weapons, weather/magic effects; 500+ packs | MUST ship `CREDITS.TXT`; derivatives stay CC-BY-SA. Never treat as public domain. |
-| [OGA Animated Emote Bubbles](https://opengameart.org/content/animated-emote-bubbles) | **CC0** (confirmed) | 16x16 PNG emote balloons (heart, exclaim, question, sleep, etc.) | Only pack confirmed CC0 in research. Attribution appreciated, not required. |
-| Kenney.nl 2D packs | likely CC0, **unverified** | roguelike/RPG/platformer tiles + sprites | Verify on the pack page before use. |
-| itch.io: Sprout Lands, Cup Nooble, Mystic Woods, Ninja Adventure, Pixel Frog (Pixel Adventure) | **unverified** | farming/RPG/platformer sets | Check each page; do not assume CC0. |
-
-Rule: before bundling any asset, open its page, read the license, and if it is
-LPC or any CC-BY/BY-SA pack, write a `CREDITS.txt` next to it. If you cannot
-confirm the license, draw it procedurally instead.
-
-**Walk cycle (confirmed: Godot, Phaser docs).** 4 to 8 frames at roughly 8 to 12
-fps reads as alive; advance the frame index by DISTANCE TRAVELLED, not wall-clock,
-and pick the sheet row by facing. Foot-anchor so the character does not float.
-```js
-const FRAMES = 6, STRIDE_PX = 10;                  // one frame per 10px walked
-const frame = Math.floor(distanceWalked / STRIDE_PX) % FRAMES;
-const row = {down:0, left:1, right:2, up:3}[facing];
-```
-
-**Idle and reaction (common practice, no single primary source).** Never leave a
-standing character frozen: a 2 to 3 px sine bob (`y += Math.sin(t/400)*1.5`), an
-occasional blink, a weight shift. On a landing or a hit, a quick squash-and-stretch
-(scale y down/x up for 80ms, then overshoot back) sells impact.
-
-**Articulate before you animate, and build ONE rig that drives every motion.**
-A bob-in-place on a solid-block body does NOT read as alive: viewers call it
-"jumping in place", because nothing swings. The fix is to give the figure
-separate limbs (two legs, two arms drawn as `lineCap:"round"` strokes from hip
-and shoulder to a foot/hand point) and drive their angle from a single phase
-variable. Then walking, dancing, and idle are the SAME rig with a different
-phase source, which is why one figure can do all three with no new art:
-```js
-let ph = 0;                                  // the one motion phase
-if (moving)       ph = distanceWalked * Math.PI / STRIDE;   // gait: by distance
-else if (dancing) ph = (t/(60000/BPM))*2*Math.PI + seedX;   // beat: by tempo + per-actor offset
-// legs scissor on sin(ph); arms swing on -sin(ph) (opposition); feet anchor to
-// the floor line (no bob) while the torso/head bob on |sin(ph)|.
-```
-Two things that matter: feet anchor to a fixed floor line so the body lifts off
-them instead of the whole sprite sliding; and a per-actor phase offset
-(`+ p.x*0.018`) makes a chorus ripple as a travelling wave instead of moving as
-one clone. A character that is meant to walk must actually translate across the
-floor (a real `walkTo` that accumulates `distanceWalked`), not teleport, or the
-gait never engages. If the demo can host a "musical" mode, dancing is then free:
-flip a `dancing` flag and the existing limbs follow the beat; held props (chorus
-cards, pom-poms) just bob with the same phase. Differentiating figure types
-(e.g. a skirt as a hip-to-knee trapezoid over the legs, longer hair as two side
-panels by the jaw) is a few extra rects on the same rig, not a second sprite.
-
-**Emotes (confirmed: Stardew event data).** A small fixed vocabulary covers most
-emotional beats. Map an enum to a 16x16 emote sprite shown above the head, animate
-a few frames, auto-dismiss after ~1.5s. Stardew's canon: heart, exclamation,
-question, sleep, angry, sad, happy, blush. This is the expressive layer that was
-missing.
-
-**Living background (confirmed: Godot parallax, Tiled animated tiles).** Two cheap,
-high-payoff moves: parallax (draw N background layers offset by `cameraX * scale`
-with scale ~0.2 / 0.5 / 1.0 so far layers move slower) and animated tiles (water,
-torches, grass sway as a short linear loop at ~10 fps, 100ms/frame). Ambient
-particles (dust motes, fireflies, falling leaves) and a day-night colour overlay
-add a lot for little code, but were not confirmed by a primary source, so treat
-them as standard practice.
-```js
-for (const L of bgLayers)                          // parallax
-  drawImage(L.img, -(cameraX * L.scale) % L.img.width, L.y);
-```
-
-**Autotiling for organic terrain (confirmed: Godot tilesets).** For grass/dirt/water
-edges, compute a tile's variant from which neighbours share its terrain (a 4-bit
-edge mask for simple cases, 8-bit corner+side for the full 47-blob set) and index a
-lookup table. Pick 2x2 (cheapest), 3x3-minimal, or full 3x3 by how much art you have.
-
-**Ambient NPC motion (confirmed: Nature of Code, Reynolds steering).** For NPCs that
-wander believably instead of standing still: `steer = limit(desired - velocity,
-maxForce)`. Wander = a random point on a circle projected ahead of the agent, with
-the angle DRIFTING per frame (`theta += rand(-d, d)`) rather than re-rolled, so
-motion is smooth not jittery.
-```js
-desired = setMag(sub(target, pos), maxSpeed);
-const steer = limit(sub(desired, vel), maxForce);
-vel = add(vel, steer); pos = add(pos, vel);
-```
-Wander alone, though, reads as aimless. To make agents feel like they are DOING
-things, give them goal props and roles: a chased object (an item that relaunches
-on catch), a batted object (a token with velocity, friction, wall-bounce that a
-nearby agent knocks away and another returns), a sit-and-groom pose. Two gotchas
-learned the hard way: (1) assign roles DETERMINISTICALLY every frame from
-`floor(t/period)%n` and proximity, never by passing a "you're it" token between
-agents on contact, because a dropped handoff leaves the whole crowd decaying to
-plain wander and the activity silently never fires again; verify by sampling that
-every intended mode actually occurs over a few seconds, not just at one instant.
-(2) Confine roamers to an explicit field rect that excludes the panels/charts and
-the bottom actor row, or they wander over content; clamp x and y and bounce the
-heading off the walls.
-
-**Data schema an LLM can emit (confirmed: Aseprite CLI, Stardew schedule data).**
-When the scene is data-driven, the smallest workable contract is: a sprite atlas
-PNG plus a JSON of named frame tags (`{name:"Walk", from:0, to:3}`, the Aseprite
-`--data` format), an entity list of `{atlas, frameTags, pos, facing}`, and an
-optional per-entity wander flag or a Stardew-style schedule string
-(`<time> <x> <y> [facing] [animation]`). That is enough to compose a believable
-animated scene without an engine.
-
-Add to verification: confirm moving characters actually animate (limbs swing or
-the frame advances with motion, not a sliding static sprite and not a bob on a
-solid block), at least one idle/ambient motion is present so nothing is frozen,
-every NPC activity mode actually fires over a few seconds (not just at one
-instant), roamers stay inside their field and off the content, and every bundled
-asset has a recorded license (and a CREDITS file where required). If a figure's
-visibility is gated on a progress value (e.g. an agent-layer fade tied to a beat
-that has not run yet), confirm it still shows when a later mode (the dance) turns
-it on cold; gate explicit on-states at full opacity, not on the ramp.
+Each file ends with the verification items specific to that technique; fold those
+into your final check when you used the technique.
 
 ## Visual identity
 
@@ -546,6 +378,13 @@ comments stay English; numbers use the right locale (`toLocaleString('cs-CZ')`).
    on-canvas labels overlap and that symmetric elements are labeled symmetrically (a
    thing on the left and an identical thing on the right should not have one named
    and the other bare).
+8. If you used either borrowable-technique deep-dive, run its own verification list
+   too (the last paragraph of [`reference/technique-canvas-text.md`](reference/technique-canvas-text.md):
+   longest lines through every bubble/panel, no overflow, no two boxes overlapping;
+   and of [`reference/technique-aliveness.md`](reference/technique-aliveness.md):
+   moving characters actually animate, at least one idle/ambient motion, every NPC
+   mode fires over a few seconds, roamers stay off the content, every bundled asset
+   has a recorded license).
 
 ## What this skill is NOT
 
