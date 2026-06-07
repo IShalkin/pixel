@@ -42,7 +42,10 @@ procedurally by default; sprite art is opt-in (see Licensing).
 
 ```
 SKILL.md      the skill itself (the full method and the borrowable techniques)
-reference/    five worked example pages (study the METHOD, do not clone them)
+reference/    five worked example pages (study the METHOD, do not clone them),
+              plus two technique deep-dives read on demand:
+              technique-canvas-text.md (canvas text wrap/clip/de-overlap) and
+              technique-aliveness.md (assets, walk/dance rig, NPC motion)
 assets/       optional LPC sprite art; procedural drawing is the default
 ```
 
